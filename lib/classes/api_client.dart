@@ -117,14 +117,13 @@ class ApiClient {
   }
 
   /// Creates a new homeroom
-  Future<Map<String, dynamic>> createHomeroom({
+  /// Returns the ID of the newly created homeroom
+  Future<String> createHomeroom({
     required String name,
     required String grade,
     required List<String> teacherIds,
   }) async {
     try {
-      print('Creating new homeroom: $name (Grade: $grade)');
-
       final requestBody = jsonEncode({
         'newHomeroom': {'name': name, 'grade': grade},
         'link': {'teachers': teacherIds},
@@ -141,9 +140,11 @@ class ApiClient {
         body: requestBody,
       );
 
-      if (response.statusCode == 201) {
-        final responseData = jsonDecode(response.body);
-        return responseData;
+      if (response.statusCode == 200) {
+        // Parse the response which contains an array with a homeroom ID object
+        final List<dynamic> responseData = jsonDecode(response.body);
+        final Map<String, dynamic> idObject = responseData[0];
+        return idObject['id'] as String;
       } else {
         throw Exception(
           'Failed to create homeroom: [${response.statusCode}] ${response.body}',
