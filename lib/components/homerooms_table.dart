@@ -24,6 +24,8 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
   HomeroomSortField _sortField = HomeroomSortField.name;
   bool _ascending = true;
 
+  List<Homeroom> selectedHomerooms = [];
+
   void _sort(HomeroomSortField field) {
     setState(() {
       if (_sortField == field) {
@@ -111,7 +113,6 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Calculate positions for column dividers
     const double paddingH = 8.0;
     // Define column flex proportions
     const int col1Flex = 1; // Grade
@@ -145,10 +146,10 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
                   _scrollableTableContent(
                     paddingH,
                     col1Flex,
-                    theme,
                     col2Flex,
                     col3Flex,
                     col4Width,
+                    theme,
                   ),
                 ],
               ),
@@ -162,10 +163,10 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
   Expanded _scrollableTableContent(
     double paddingH,
     int col1Flex,
-    ThemeData theme,
     int col2Flex,
     int col3Flex,
     double col4Width,
+    ThemeData theme,
   ) {
     return Expanded(
       child: ListView.separated(
@@ -178,6 +179,7 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
             child: InkWell(
               onTap: () => widget.onTap(hr),
               hoverColor: Colors.white,
+              splashColor: Colors.transparent,
               child: Padding(
                 padding: EdgeInsets.symmetric(
                   vertical: 12.0,
@@ -185,6 +187,19 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
                 ),
                 child: Row(
                   children: [
+                    // Checkbox
+                    Checkbox(
+                      value: selectedHomerooms.contains(hr),
+                      onChanged: (bool? value) {
+                        setState(() {
+                          if (value == true) {
+                            selectedHomerooms.add(hr);
+                          } else {
+                            selectedHomerooms.remove(hr);
+                          }
+                        });
+                      },
+                    ),
                     // Grade
                     _dataCell(
                       col1Flex,
@@ -264,6 +279,26 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
         padding: EdgeInsets.symmetric(vertical: 16.0, horizontal: paddingH),
         child: Row(
           children: [
+            // Checkbox column
+            Checkbox(
+              tristate: true,
+              value:
+                  selectedHomerooms.isEmpty
+                      ? false
+                      : (selectedHomerooms.length == widget.homerooms.length
+                          ? true
+                          : null),
+              onChanged: (bool? value) {
+                debugPrint('Checkbox value: $value');
+                setState(() {
+                  if (value == true) {
+                    selectedHomerooms = List.from(widget.homerooms);
+                  } else if (value == false || value == null) {
+                    selectedHomerooms.clear();
+                  }
+                });
+              },
+            ),
             _buildSortableHeader('Grade', HomeroomSortField.grade, col1Flex),
             _buildSortableHeader('Name', HomeroomSortField.name, col2Flex),
             _buildSortableHeader(
