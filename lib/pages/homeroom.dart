@@ -19,7 +19,6 @@ class _HomeroomLandingPageState extends State<HomeroomLandingPage> {
   void initState() {
     super.initState();
     _homeroom = widget.homeroom;
-    print('homeroom: $_homeroom');
   }
 
   void _showAddStudentDialog(BuildContext context) {
@@ -49,7 +48,26 @@ class _HomeroomLandingPageState extends State<HomeroomLandingPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Get the SchoolStore to ensure we're using the singleton instances of Grade
+    final store = Provider.of<SchoolStore>(context, listen: false);
 
+    // If needed, update the homeroom's grade to use the singleton instance
+    final singletonGrade = store.availableGrades.firstWhere(
+      (g) => g.value == _homeroom.grade.value,
+      orElse: () => _homeroom.grade, // fallback to existing grade if not found
+    );
+
+    // If they're not the same instance (but have the same value), update
+    if (singletonGrade != _homeroom.grade &&
+        singletonGrade.value == _homeroom.grade.value) {
+      _homeroom = Homeroom(
+        id: _homeroom.id,
+        name: _homeroom.name,
+        grade: singletonGrade, // Use the singleton instance
+        teachers: _homeroom.teachers,
+        students: _homeroom.students,
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(_homeroom.name),

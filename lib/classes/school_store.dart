@@ -39,11 +39,20 @@ class SchoolStore extends ChangeNotifier {
       _allTeachers = data['teachers'] as List<Teacher>;
       _allStudents = data['students'] as List<Student>;
 
-      // For grades, ensure we're using the singleton pattern
-      // This avoids duplicate Grade objects with the same value
+      // For grades, ensure we're using unique instances by explicitly using
+      // the Grade factory constructor that checks the cache
       final rawGrades = data['grades'] as List<Grade>;
-      gradeOptions =
-          rawGrades.map((g) => Grade(value: g.value, name: g.name)).toList();
+
+      // Clear gradeOptions and rebuild it with singleton instances
+      gradeOptions = [];
+      for (final grade in rawGrades) {
+        // This uses the factory constructor which ensures singleton pattern
+        final singletonGrade = Grade(value: grade.value, name: grade.name);
+        // Only add if not already in the list
+        if (!gradeOptions.any((g) => g.value == singletonGrade.value)) {
+          gradeOptions.add(singletonGrade);
+        }
+      }
     } catch (e) {
       error = e.toString();
     } finally {
@@ -52,7 +61,6 @@ class SchoolStore extends ChangeNotifier {
     }
   }
 
-  /// Creates a new homeroom
   /// Creates a new homeroom
   Future<bool> createHomeroom({
     required String name,
@@ -70,8 +78,6 @@ class SchoolStore extends ChangeNotifier {
         grade: grade.toApiString(),
         teacherIds: teacherIds,
       );
-
-      print('Homeroom created with ID: $newHomeroomId');
 
       // Since we only got an ID back, create a temporary homeroom object
       // with the information we have
@@ -97,8 +103,8 @@ class SchoolStore extends ChangeNotifier {
       try {
         await loadHomerooms();
       } catch (refreshError) {
-        print('Warning: Could not refresh homerooms: $refreshError');
-        // Continue since we already created a local representation
+        debugPrint('Warning: Could not refresh homerooms: $refreshError');
+        rethrow;
       }
 
       isLoading = false;
@@ -106,7 +112,7 @@ class SchoolStore extends ChangeNotifier {
       return true;
     } catch (e) {
       error = e.toString();
-      print('Error creating homeroom: $e');
+      debugPrint('Error creating homeroom: $e');
       isLoading = false;
       notifyListeners();
       return false;
@@ -178,27 +184,8 @@ class SchoolStore extends ChangeNotifier {
       );
 
       if (success) {
-        // Reload the homeroom data
-        print('Successfully sent update request. Reloading homeroom data...');
-
-        try {
-          // Fetch fresh data for this homeroom
-          await reloadHomeroom(homeroomId);
-          print('Successfully reloaded homeroom data');
-        } catch (e) {
-          // If reload fails, update locally since we know the server change succeeded
-          print('Error reloading homeroom: $e');
-
-          // Local update as fallback
-          final updatedStudents = [...homeroom.students, student];
-          homerooms[index] = Homeroom(
-            id: homeroom.id,
-            grade: homeroom.grade,
-            name: homeroom.name,
-            teachers: homeroom.teachers,
-            students: updatedStudents,
-          );
-        }
+        // Fetch fresh data for this homeroom - no fallback if this fails
+        await reloadHomeroom(homeroomId);
 
         // Refresh the cache of students
         _refreshStudentsCache();
@@ -208,7 +195,7 @@ class SchoolStore extends ChangeNotifier {
       }
     } catch (e) {
       error = e.toString();
-      print('Error adding student to homeroom: $e');
+      debugPrint('Error adding student to homeroom: $e');
       return false;
     } finally {
       isLoading = false;
@@ -246,28 +233,8 @@ class SchoolStore extends ChangeNotifier {
       );
 
       if (success) {
-        // Reload the homeroom data
-        try {
-          await reloadHomeroom(homeroomId);
-        } catch (e) {
-          print('Error reloading homeroom: $e');
-
-          // Local update as fallback
-          final updatedStudents = [
-            ...homeroom.students,
-            ...students.where(
-              (s) => !homeroom.students.any((existing) => existing.id == s.id),
-            ),
-          ];
-
-          homerooms[index] = Homeroom(
-            id: homeroom.id,
-            grade: homeroom.grade,
-            name: homeroom.name,
-            teachers: homeroom.teachers,
-            students: updatedStudents,
-          );
-        }
+        // Reload the homeroom data directly from the server - no fallback
+        await reloadHomeroom(homeroomId);
 
         // Refresh the cache of students
         _refreshStudentsCache();
@@ -277,7 +244,7 @@ class SchoolStore extends ChangeNotifier {
       }
     } catch (e) {
       error = e.toString();
-      print('Error adding students to homeroom: $e');
+      debugPrint('Error adding students to homeroom: $e');
       return false;
     } finally {
       isLoading = false;
@@ -306,7 +273,7 @@ class SchoolStore extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Error reloading homeroom data: $e');
+      debugPrint('Error reloading homeroom data: $e');
       rethrow;
     }
   }

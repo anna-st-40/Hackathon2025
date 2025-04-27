@@ -73,7 +73,7 @@ class ApiClient {
 
       return response.statusCode == 200;
     } catch (e) {
-      print('Error adding student to homeroom: $e');
+      debugPrint('Error adding student to homeroom: $e');
       return false;
     }
   }
@@ -111,7 +111,7 @@ class ApiClient {
 
       return response.statusCode == 200;
     } catch (e) {
-      print('Error adding students to homeroom: $e');
+      debugPrint('Error adding students to homeroom: $e');
       return false;
     }
   }
@@ -162,7 +162,7 @@ class ApiClient {
       final Map<String, dynamic> jsonBody = jsonDecode(response.body);
       return Homeroom.fromJson(jsonBody);
     } catch (e) {
-      print('Error fetching homeroom by ID: $e');
+      debugPrint('Error fetching homeroom by ID: $e');
       rethrow;
     }
   }
