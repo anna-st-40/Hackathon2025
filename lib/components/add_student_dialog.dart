@@ -219,13 +219,6 @@ class AddStudentDialogState extends State<AddStudentDialog> {
 
                                   if (success) {
                                     Navigator.of(context).pop(true);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Student added successfully',
-                                        ),
-                                      ),
-                                    );
                                   } else {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
