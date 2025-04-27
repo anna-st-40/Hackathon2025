@@ -3,20 +3,17 @@ import 'package:http/http.dart' as http;
 import 'package:project/classes/homeroom.dart';
 
 class ApiClient {
-  ApiClient();
+  ApiClient({http.Client? client}) : _client = client ?? http.Client();
 
   final String _host = 'https://gradebook-api-cyan.vercel.app/api';
+  final http.Client _client;
 
   Future<http.Response> get(String url) async {
-    try {
-      final response = await http.get(Uri.parse('$_host/$url'));
-      if (response.statusCode != 200) {
-        throw Exception('GET $url failed: ${response.body}');
-      }
-      return response;
-    } catch (e) {
-      rethrow;
+    final response = await _client.get(Uri.parse('$_host/$url'));
+    if (response.statusCode != 200) {
+      throw Exception('GET $url failed: ${response.body}');
     }
+    return response;
   }
 
   Future<http.Response> post(String url, String body) async {
