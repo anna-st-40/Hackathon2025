@@ -46,8 +46,44 @@ class SchoolStore extends ChangeNotifier {
     }
   }
 
-  // Your existing CRUD methods (deleteHomeroom, addHomeroom, updateHomeroom)
-  // would need to be updated to work with the new structure
+  /// Creates a new homeroom
+  Future<bool> createHomeroom({
+    required String name,
+    required Grade grade,
+    required List<String> teacherIds,
+  }) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      // Make API call to create homeroom
+      final homeroomData = await _api.createHomeroom(
+        name: name,
+        grade: grade.toApiString(),
+        teacherIds: teacherIds,
+      );
+
+      // Parse the returned homeroom
+      final newHomeroom = Homeroom.fromJson(homeroomData);
+
+      // Add to local list
+      homerooms.add(newHomeroom);
+
+      // Refresh caches if needed
+      // No need to refresh students since there are no students in a new homeroom
+
+      isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      error = e.toString();
+      print('Error creating homeroom: $e');
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
 
   /// Gets homerooms for a specific teacher
   List<Homeroom> getHomeroomsForTeacher(String teacherId) {

@@ -46,20 +46,18 @@ class ApiClient {
     required String grade,
   }) async {
     try {
-      print('Adding student $studentId to homeroom $homeroomId');
-
       // Updated request structure with all required fields
       final requestBody = jsonEncode({
         'updatedHomeroom': {
           'id': homeroomId,
           'name': homeroomName, // Required field
           'grade': grade, // Required field
-          'students': [],
+          'students': [studentId],
         },
         'link': {
           'students': [studentId],
         },
-        'unlink': {'students': []},
+        'unlink': {},
       });
 
       final headers = {
@@ -67,17 +65,11 @@ class ApiClient {
         'Accept': 'application/json',
       };
 
-      print('Making PUT request to: $_host/homerooms/$homeroomId');
-      print('\nRequest body: $requestBody');
-
       final response = await http.put(
         Uri.parse('$_host/homerooms/$homeroomId'),
         headers: headers,
         body: requestBody,
       );
-
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
 
       return response.statusCode == 200;
     } catch (e) {
@@ -94,8 +86,6 @@ class ApiClient {
     required String grade,
   }) async {
     try {
-      print('Adding ${studentIds.length} students to homeroom $homeroomId');
-
       // Include all required fields in the request structure
       final requestBody = jsonEncode({
         'updatedHomeroom': {
@@ -113,22 +103,54 @@ class ApiClient {
         'Accept': 'application/json',
       };
 
-      print('Making PUT request to: $_host/homerooms/$homeroomId');
-      print('Request body: $requestBody');
-
       final response = await http.put(
         Uri.parse('$_host/homerooms/$homeroomId'),
         headers: headers,
         body: requestBody,
       );
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
       return response.statusCode == 200;
     } catch (e) {
       print('Error adding students to homeroom: $e');
       return false;
+    }
+  }
+
+  /// Creates a new homeroom
+  Future<Map<String, dynamic>> createHomeroom({
+    required String name,
+    required String grade,
+    required List<String> teacherIds,
+  }) async {
+    try {
+      print('Creating new homeroom: $name (Grade: $grade)');
+
+      final requestBody = jsonEncode({
+        'newHomeroom': {'name': name, 'grade': grade},
+        'link': {'teachers': teacherIds},
+      });
+
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      final response = await http.post(
+        Uri.parse('$_host/homerooms'),
+        headers: headers,
+        body: requestBody,
+      );
+
+      if (response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        return responseData;
+      } else {
+        throw Exception(
+          'Failed to create homeroom: [${response.statusCode}] ${response.body}',
+        );
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 
