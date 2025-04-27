@@ -96,7 +96,7 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: Center(child: body),
+      body: Center(child: SingleChildScrollView(child: body)),
     );
   }
 }
