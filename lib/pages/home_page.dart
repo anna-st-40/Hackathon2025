@@ -1,87 +1,273 @@
 import 'package:flutter/material.dart';
-import 'package:project/classes/api_client.dart';
-import 'package:project/classes/homeroom.dart';
-import 'package:project/components/homerooms_table.dart';
+import 'package:project/pages/homeroom.dart';
+import 'package:project/pages/student_list.dart';
+import 'package:project/pages/teachers_list.dart';
+import 'package:provider/provider.dart';
+import 'package:project/classes/school_store.dart';
+import 'package:project/components/homerooms_table.dart'; // Add this import
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.title});
+class HomePage extends StatelessWidget {
   final String title;
 
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  final ApiClient _api = ApiClient();
-  List<Homeroom> _homerooms = [];
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchHomerooms();
-  }
-
-  Future<void> _fetchHomerooms() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final list = await _api.getHomerooms();
-      setState(() {
-        _homerooms = list;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-      });
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
+  const HomePage({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {
-    Widget body;
-
-    if (_isLoading) {
-      body = const Center(child: CircularProgressIndicator());
-    } else if (_error != null) {
-      body = Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Error loading homerooms:\n$_error',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.red),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _fetchHomerooms,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    } else if (_homerooms.isEmpty) {
-      body = const Center(child: Text('No homerooms found.'));
-    } else {
-      body = Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: HomeroomsTable(homerooms: _homerooms),
-      );
-    }
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        title: Text(title),
+        backgroundColor: theme.colorScheme.inversePrimary,
       ),
-      body: body,
+      drawer: _buildDrawer(context),
+      body: Consumer<SchoolStore>(
+        builder: (context, store, child) {
+          if (store.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (store.error != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 60,
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Error loading data', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  Text(store.error!),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => store.loadHomerooms(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Main content - dashboard with homerooms
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Dashboard header
+                Row(
+                  children: [
+                    Text(
+                      'Dashboard',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const Spacer(),
+                    _buildSummaryChip(
+                      context,
+                      'Homerooms',
+                      store.homerooms.length,
+                      Icons.home_work,
+                      theme.colorScheme.tertiaryContainer,
+                      theme.colorScheme.onTertiaryContainer,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildSummaryChip(
+                      context,
+                      'Teachers',
+                      store.allTeachers.length,
+                      Icons.person,
+                      theme.colorScheme.primaryContainer,
+                      theme.colorScheme.onPrimaryContainer,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildSummaryChip(
+                      context,
+                      'Students',
+                      store.allStudents.length,
+                      Icons.school,
+                      theme.colorScheme.secondaryContainer,
+                      theme.colorScheme.onSecondaryContainer,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Homerooms table
+                Expanded(
+                  child: HomeroomsDataTable(
+                    homerooms: store.homerooms,
+                    onTap: (homeroom) {
+                      // Navigate to homeroom details page
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  HomeroomLandingPage(homeroom: homeroom),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Add new homeroom action
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Add homeroom functionality coming soon'),
+            ),
+          );
+        },
+        tooltip: 'Add Homeroom',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildSummaryChip(
+    BuildContext context,
+    String label,
+    int count,
+    IconData icon,
+    Color backgroundColor,
+    Color foregroundColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: foregroundColor),
+          const SizedBox(width: 8),
+          Text(
+            '$label: $count',
+            style: TextStyle(
+              color: foregroundColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Gradebook',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'School Management System',
+                  style: TextStyle(color: Colors.amberAccent),
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.home),
+            title: const Text('Dashboard'),
+            selected: true,
+            onTap: () {
+              Navigator.pop(context); // Close the drawer
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.groups),
+            title: const Text('Homerooms'),
+            onTap: () {
+              Navigator.pop(context);
+              // Already on homerooms page/dashboard
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: const Text('Teachers'),
+            trailing: Consumer<SchoolStore>(
+              builder: (context, store, child) {
+                return Chip(
+                  label: Text(store.allTeachers.length.toString()),
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primaryContainer,
+                  labelStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                );
+              },
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => TeachersListPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.school),
+            title: const Text('Students'),
+            trailing: Consumer<SchoolStore>(
+              builder: (context, store, child) {
+                return Chip(
+                  label: Text(store.allStudents.length.toString()),
+                  backgroundColor:
+                      Theme.of(context).colorScheme.secondaryContainer,
+                  labelStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
+                );
+              },
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => StudentsListPage()),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('Settings'),
+            onTap: () {
+              Navigator.pop(context);
+              // Navigate to settings page
+            },
+          ),
+        ],
+      ),
     );
   }
 }

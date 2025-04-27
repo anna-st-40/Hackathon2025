@@ -1,7 +1,6 @@
-// lib/classes/homeroom.dart
-import 'package:project/classes/teacher.dart';
-import 'package:project/classes/student.dart';
 import 'package:project/classes/grade.dart';
+import 'package:project/classes/student.dart';
+import 'package:project/classes/teacher.dart';
 
 class Homeroom {
   final String id;
@@ -14,49 +13,34 @@ class Homeroom {
     required this.id,
     required this.grade,
     required this.name,
-    List<Teacher>? teachers,
+    required this.teachers,
     List<Student>? students,
-  }) : teachers = teachers ?? [],
-       students = students ?? [];
+  }) : students = students ?? [];
 
   factory Homeroom.fromJson(Map<String, dynamic> json) {
-    // parse grade string → Grade object
-    final rawGrade = json['grade'] as String? ?? '0';
+    // Parse grade string to Grade object
+    final rawGrade = json['grade'];
     final grade = Grade.fromString(rawGrade);
 
-    // existing filtering logic for teachers/students
-    final rawTeachers = json['teachers'] as List<dynamic>? ?? [];
-    final teacherMaps =
-        rawTeachers
-            .where(
-              (e) =>
-                  e is Map<String, dynamic> &&
-                  (e['id'] != null || e['name'] != null),
-            )
-            .cast<Map<String, dynamic>>();
+    // Parse teachers list
+    final teacherMaps = json['teachers'] as List<dynamic>;
+    final teachers = teacherMaps.map((m) => Teacher.fromJson(m)).toList();
 
-    final rawStudents = json['students'] as List<dynamic>? ?? [];
-    final studentMaps =
-        rawStudents
-            .where(
-              (e) =>
-                  e is Map<String, dynamic> &&
-                  (e['id'] != null || e['name'] != null),
-            )
-            .cast<Map<String, dynamic>>();
+    // Parse students list if it exists and is not empty
+    final studentMaps = json['students'] as List<dynamic>? ?? [];
+    final students = studentMaps.map((m) => Student.fromJson(m)).toList();
 
     return Homeroom(
-      id: json['id'] as String? ?? '',
+      id: json['id'],
       grade: grade,
-      name: json['name'] as String? ?? '',
-      teachers: teacherMaps.map((m) => Teacher.fromJson(m)).toList(),
-      students: studentMaps.map((m) => Student.fromJson(m)).toList(),
+      name: json['name'],
+      teachers: teachers,
+      students: students,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
-    // send back the numeric string
     'grade': grade.toApiString(),
     'name': name,
     'teachers': teachers.map((t) => t.toJson()).toList(),

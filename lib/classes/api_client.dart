@@ -1,12 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:project/classes/grade.dart';
 import 'package:project/classes/homeroom.dart';
+import 'package:project/classes/student.dart';
+import 'package:project/classes/teacher.dart';
 
 class ApiClient {
   ApiClient({http.Client? client}) : _client = client ?? http.Client();
 
-  final String _host = 'https://gradebook-api-cyan.vercel.app/api';
+  final String _host = 'https://gradebook-api-psi.vercel.app/api';
   final http.Client _client;
 
   Future<http.Response> fetch(String url) async {
@@ -34,14 +37,90 @@ class ApiClient {
     }
   }
 
-  Future<http.Response> put(String url, String body) async {
+  /// Simple method to add a student to a homeroom
+  /// Returns true if successful, false otherwise
+  Future<bool> addStudentToHomeroom(String homeroomId, String studentId) async {
     try {
-      final response = await http.put(Uri.parse('$_host/$url'), body: body);
-      if (response.statusCode != 200) {
-        throw Exception('PUT $url failed: ${response.body}');
-      }
-      return response;
+      print('Adding student $studentId to homeroom $homeroomId');
+
+      // Simple request structure
+      final requestBody = jsonEncode({
+        'link': {
+          'students': [studentId],
+        },
+        'unlink': {'students': []},
+      });
+
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      print('Making PUT request to: $_host/homerooms/$homeroomId');
+
+      print('\nRequest body: $requestBody');
+
+      final response = await http.put(
+        Uri.parse('$_host/homerooms/$homeroomId'),
+        headers: headers,
+        body: requestBody,
+      );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      return response.statusCode == 200;
     } catch (e) {
+      print('Error adding student to homeroom: $e');
+      return false;
+    }
+  }
+
+  /// Add multiple students to a homeroom at once
+  Future<bool> addStudentsToHomeroom(
+    String homeroomId,
+    List<String> studentIds,
+  ) async {
+    try {
+      print('Adding ${studentIds.length} students to homeroom $homeroomId');
+
+      // Simple request structure for multiple students
+      final requestBody = jsonEncode({
+        'link': {'students': studentIds},
+        'unlink': {'students': []},
+      });
+
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      print('Making PUT request to: $_host/homerooms/$homeroomId');
+
+      final response = await http.put(
+        Uri.parse('$_host/homerooms/$homeroomId'),
+        headers: headers,
+        body: requestBody,
+      );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error adding students to homeroom: $e');
+      return false;
+    }
+  }
+
+  // Add a new method to reload a single homeroom by ID
+  Future<Homeroom> getHomeroomById(String homeroomId) async {
+    try {
+      final response = await fetch('homerooms/$homeroomId');
+      final Map<String, dynamic> jsonBody = jsonDecode(response.body);
+      return Homeroom.fromJson(jsonBody);
+    } catch (e) {
+      print('Error fetching homeroom by ID: $e');
       rethrow;
     }
   }
@@ -59,17 +138,49 @@ class ApiClient {
   }
 
   /// Fetches all homerooms and parses them into model objects.
-  Future<List<Homeroom>> getHomerooms() async {
+  Future<Map<String, dynamic>> getSchoolData() async {
     try {
       final response = await fetch('homerooms');
       final Map<String, dynamic> jsonBody = jsonDecode(response.body);
-      final List<dynamic> list = jsonBody['homerooms'] as List<dynamic>;
-      return list
-          .map((e) => Homeroom.fromJson(e as Map<String, dynamic>))
-          .toList();
+
+      // Access the 'homerooms' array in the response
+      final List<dynamic> homeroomsJson =
+          jsonBody['homerooms'] as List<dynamic>;
+
+      // Store grade options for future use
+      final List<dynamic> gradesJson =
+          jsonBody['classGradeOptions'] as List<dynamic>;
+      final grades = gradesJson.map((json) => Grade.fromJson(json)).toList();
+
+      // Store all teachers for future reference
+      final List<dynamic> teachersJson = jsonBody['teachers'] as List<dynamic>;
+      final allTeachers =
+          teachersJson.map((json) => Teacher.fromJson(json)).toList();
+
+      // Store all students for future reference
+      final List<dynamic> studentsJson = jsonBody['students'] as List<dynamic>;
+      final allStudents =
+          studentsJson.map((json) => Student.fromJson(json)).toList();
+
+      // Convert homerooms JSON to Homeroom objects
+      final homerooms =
+          homeroomsJson.map((json) => Homeroom.fromJson(json)).toList();
+
+      // Return all parsed data in a structured format
+      return {
+        'homerooms': homerooms,
+        'grades': grades,
+        'teachers': allTeachers,
+        'students': allStudents,
+      };
     } catch (e) {
-      debugPrint('Error fetching homerooms: $e');
       rethrow;
     }
+  }
+
+  // Keep this for backward compatibility
+  Future<List<Homeroom>> getHomerooms() async {
+    final data = await getSchoolData();
+    return data['homerooms'] as List<Homeroom>;
   }
 }

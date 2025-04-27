@@ -1,32 +1,40 @@
-// lib/classes/grade.dart
-
 class Grade {
-  /// The numeric grade (0–9) as an integer.
-  final int number;
-
-  /// A human-readable name, e.g. "Kindergarten", "1st Grade", etc.
+  final String id;
   final String name;
+  final String value;
 
-  Grade({required this.number, required this.name});
+  Grade({required this.id, required this.name, required this.value});
 
-  /// Parses the server’s string (e.g. "0", "1", "2", …) into a Grade.
-  factory Grade.fromString(String value) {
-    final n = int.tryParse(value) ?? 0;
-    const names = {
-      0: 'Kindergarten',
-      1: '1st Grade',
-      2: '2nd Grade',
-      3: '3rd Grade',
-      4: '4th Grade',
-      5: '5th Grade',
-      6: '6th Grade',
-      7: '7th Grade',
-      8: '8th Grade',
-      9: '9th Grade',
-    };
-    return Grade(number: n, name: names[n] ?? '$n');
+  factory Grade.fromJson(Map<String, dynamic> json) {
+    return Grade(id: json['id'], name: json['name'], value: json['value']);
   }
 
-  /// When sending back to the API, use the original numeric string.
-  String toApiString() => number.toString();
+  factory Grade.fromString(String gradeValue) {
+    // This handles cases where we only have the grade value
+    // like in the homeroom JSON objects
+    switch (gradeValue) {
+      case '0':
+        return Grade(id: '', name: 'Kindergarten', value: '0');
+      case '1':
+        return Grade(id: '', name: '1st Grade', value: '1');
+      case '2':
+        return Grade(id: '', name: '2nd Grade', value: '2');
+      case '3':
+        return Grade(id: '', name: '3rd Grade', value: '3');
+      default:
+        if (int.tryParse(gradeValue) != null) {
+          return Grade(
+            id: '',
+            name: '${gradeValue}th Grade',
+            value: gradeValue,
+          );
+        }
+        return Grade(id: '', name: 'Unknown', value: gradeValue);
+    }
+  }
+
+  String toApiString() => value;
+
+  @override
+  String toString() => name;
 }

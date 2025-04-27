@@ -38,6 +38,8 @@ dependencies:
   test: ^1.25.15
   popover: ^0.3.1
   trina_grid: ^1.6.7
+  provider: ^6.1.4
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:

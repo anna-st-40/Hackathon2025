@@ -1,0 +1,1461 @@
+openapi: 3.0.4
+info:
+  title: School Management API
+  description: API for managing Homerooms, Teachers, Students, Classes, Assignments, and Grades.
+  version: 1.0.0
+servers:
+  - url: /api # Adjust if your base path is different (e.g., https://your-deployment.vercel.app/api)
+    description: Vercel Serverless API Base
+
+tags:
+  - name: Homerooms
+    description: Operations related to Homerooms
+  - name: Teachers
+    description: Operations related to Teachers
+  - name: Students
+    description: Operations related to Students
+  - name: Classes
+    description: Operations related to Classes
+  - name: Assignments
+    description: Operations related to Assignments
+  - name: Grades
+    description: Operations related to Grades
+  - name: ClassGradeOptions
+    description: Operations related to Class Grade Options (e.g., Freshman, Sophomore)
+
+paths:
+  # Homerooms
+  /homerooms:
+    get:
+      tags: [Homerooms]
+      summary: Get all Homerooms
+      operationId: getHomerooms
+      responses:
+        "200":
+          description: A list of homerooms with nested teachers and students. Also includes global lists of options.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  homerooms:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/HomeroomWithRelations"
+                  classGradeOptions: # Included based on original query
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ClassGradeOption"
+                  teachers: # Included based on original query
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Teacher"
+                  students: # Included based on original query
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Student"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: [Homerooms]
+      summary: Add a new Homeroom
+      operationId: addHomeroom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddHomeroomRequest"
+      responses:
+        "201":
+          description: Homeroom created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomeroomWithRelations" # Return the created homeroom with relations
+          headers:
+            Location:
+              description: URL of the newly created homeroom
+              schema:
+                type: string
+                format: url
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags: [Homerooms]
+      summary: Delete multiple Homerooms
+      operationId: deleteHomerooms
+      description: Deletes homerooms based on a list of IDs provided in the request body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+              description: An array of Homeroom IDs to delete.
+              example:
+                [
+                  "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+                  "f47ac10b-58cc-4372-a567-0e02b2c3d480",
+                ]
+      responses:
+        "204":
+          description: Homerooms deleted successfully
+        "400":
+          $ref: "#/components/responses/BadRequest" # If body is malformed
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /homerooms/{homeroomId}:
+    parameters:
+      - $ref: "#/components/parameters/HomeroomId"
+    get:
+      tags: [Homerooms]
+      summary: Get a specific Homeroom by ID
+      operationId: getHomeroom
+      responses:
+        "200":
+          description: Specific Homeroom data with relations. Also includes global lists.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  homerooms: # Query returns object with 'homerooms' key even for single result
+                    type: array # Assuming query might return array even with ID filter
+                    items:
+                      $ref: "#/components/schemas/HomeroomWithRelations"
+                  teachers: # Included based on original query
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Teacher"
+                  students: # Included based on original query
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Student"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    put:
+      tags: [Homerooms]
+      summary: Update a specific Homeroom
+      operationId: editHomeroom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateHomeroomRequest" # Uses same structure as Add for PUT
+      responses:
+        "200":
+          description: Homeroom updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomeroomWithRelations" # Return the updated homeroom
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags: [Homerooms]
+      summary: Delete a specific Homeroom
+      operationId: deleteHomeroom
+      responses:
+        "204":
+          description: Homeroom deleted successfully
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # Teachers (Similar structure for GET all, POST, DELETE multiple)
+  /teachers:
+    get:
+      tags: [Teachers]
+      summary: Get all Teachers
+      operationId: getTeachers
+      responses:
+        "200":
+          description: A list of teachers with associated classes and homerooms.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  teachers:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TeacherWithRelations"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: [Teachers]
+      summary: Add a new Teacher
+      operationId: addTeacher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddTeacherRequest"
+      responses:
+        "201":
+          description: Teacher created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherWithRelations"
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      tags: [Teachers]
+      summary: Delete multiple Teachers
+      operationId: deleteTeachers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkDeleteBody"
+      responses:
+        "204": { description: Teachers deleted successfully }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  # Teachers/{id} (Similar structure for GET one, PUT, DELETE one)
+  /teachers/{teacherId}:
+    parameters:
+      - $ref: "#/components/parameters/TeacherId"
+    get:
+      tags: [Teachers]
+      summary: Get a specific Teacher by ID
+      operationId: getTeacher
+      responses:
+        "200":
+          description: Specific Teacher data with relations.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  teachers: # Query returns object with 'teachers' key
+                    type: array # Assuming array response
+                    items:
+                      $ref: "#/components/schemas/TeacherWithRelations"
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    put:
+      tags: [Teachers]
+      summary: Update a specific Teacher
+      operationId: editTeacher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTeacherRequest"
+      responses:
+        "200":
+          description: Teacher updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherWithRelations"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      tags: [Teachers]
+      summary: Delete a specific Teacher
+      operationId: deleteTeacher
+      responses:
+        "204": { description: Teacher deleted successfully }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  # Students (Similar structure)
+  /students:
+    # get: { $ref: "#/components/pathItems/getStudents" }
+    get:
+      tags: [Students]
+      summary: Get all Students
+      operationId: getStudents
+      responses:
+        "200":
+          description: A list of students with associated homeroom, classes, and assignments.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  students:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StudentWithRelations"
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    post:
+      tags: [Students]
+      summary: Add a new Student
+      operationId: addStudent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddStudentRequest"
+      responses:
+        "201":
+          description: Student created,
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentWithDeepRelations"
+          headers:
+            Location:
+              $ref: "#/components/headers/Location"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      tags: [Students]
+      summary: Delete multiple Students
+      operationId: deleteStudents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BulkDeleteBody" }
+      responses:
+        "204": { description: Students deleted }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+  /students/{studentId}:
+    parameters: [{ $ref: "#/components/parameters/StudentId" }]
+    get:
+      tags: [Students]
+      summary: Get a specific Student by ID
+      operationId: getStudent
+      responses:
+        "200":
+          description: Student data
+          content:
+            application/json:
+              schema:
+                type: object,
+                properties:
+                  students:
+                    type: array,
+                    items:
+                      $ref: "#/components/schemas/StudentWithDeepRelations"
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    put:
+      tags: [Students]
+      summary: Update a specific Student
+      operationId: editStudent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object,
+              properties:
+                updatedStudent: { $ref: "#/components/schemas/Student" }
+                link: { $ref: "#/components/schemas/LinkStudentRequest" }
+              required: [updatedStudent]
+      responses:
+        "200":
+          description: Student updated,
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentWithDeepRelations" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      tags: [Students]
+      summary: Delete a specific Student
+      operationId: deleteStudent
+      responses:
+        "204": { description: Student deleted }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  # Classes (Similar structure)
+  /classes:
+    get: { $ref: "#/components/pathItems/getClasses" }
+    post: { $ref: "#/components/pathItems/addClass" }
+    delete: { $ref: "#/components/pathItems/deleteClasses" }
+  /classes/{classId}:
+    parameters: [{ $ref: "#/components/parameters/ClassId" }]
+    get: { $ref: "#/components/pathItems/getClass" }
+    put: { $ref: "#/components/pathItems/editClass" }
+    delete: { $ref: "#/components/pathItems/deleteClass" }
+
+  # Assignments (Similar structure)
+  /assignments:
+    get: { $ref: "#/components/pathItems/getAssignments" }
+    post: { $ref: "#/components/pathItems/addAssignment" }
+    delete: { $ref: "#/components/pathItems/deleteAssignments" }
+  /assignments/{assignmentId}:
+    parameters: [{ $ref: "#/components/parameters/AssignmentId" }]
+    get: { $ref: "#/components/pathItems/getAssignment" }
+    put: { $ref: "#/components/pathItems/editAssignment" }
+    delete: { $ref: "#/components/pathItems/deleteAssignment" } # Corrected typo
+
+  # Grades (Similar structure)
+  /grades:
+    get: { $ref: "#/components/pathItems/getGrades" }
+    post: { $ref: "#/components/pathItems/addGrade" }
+    delete: { $ref: "#/components/pathItems/deleteGrades" }
+  /grades/{gradeId}:
+    parameters: [{ $ref: "#/components/parameters/GradeId" }]
+    get: { $ref: "#/components/pathItems/getGrade" }
+    put: { $ref: "#/components/pathItems/editGrade" }
+    delete: { $ref: "#/components/pathItems/deleteGrade" } # Corrected typo
+
+  # Class Grade Options
+  /classGradeOptions:
+    get:
+      tags: [ClassGradeOptions]
+      summary: Get all Class Grade Options
+      operationId: getClassGradeOptions
+      responses:
+        "200":
+          description: A list of available class grade options.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  classGradeOptions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ClassGradeOption"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  schemas:
+    # --- Base Entity Schemas ---
+    Homeroom:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          example: "Room 101"
+        grade:
+          type: string
+          example: "9th Grade"
+
+        # Add other homeroom properties based on your NoIdEntity<'homerooms'>
+      required: [name, grade] # Adjust required fields
+    Teacher:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          example: "Jane Doe"
+        # Add other teacher properties
+      required: [name]
+    Student:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          example: "John Smith"
+        # Add other student properties
+      required: [name]
+    Class:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          example: "Algebra I"
+        description:
+          type: string
+          example: "Math"
+        # Add other class properties
+      required: [name]
+    Assignment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          example: "Chapter 1 Homework"
+        description:
+          type: string
+          example: "Complete all problems in section 1.1"
+        max_points:
+          type: integer
+          example: 100
+        standard:
+          type: string
+          example: "CCSS.Math.Content.HSA-REI.B.4"
+        # Add other assignment properties
+      required: [name, max_points]
+    Grade:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        score:
+          type:
+            anyOf:
+              - string
+              - number
+          # format: float
+          example: 85.5
+        standard_score:
+          type:
+            array:
+              items:
+                anyOf:
+                  - number
+                  - string
+          example: ["B"]
+        comments:
+          type: string
+          example: "Great job!"
+        # Add other grade properties
+      required: [score]
+    ClassGradeOption:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          example: "Freshman"
+        value:
+          type: string
+          example: "Freshman"
+        # Add other option properties
+      required: [name, value]
+
+    # --- Schemas for Request Bodies (Add/Update) ---
+    NewHomeroom:
+      allOf: [{ $ref: "#/components/schemas/Homeroom" }]
+      description: Homeroom data for creation (ID is excluded/ignored).
+      properties: { id: { readOnly: true } } # Mark id explicitly readonly here too
+    UpdateHomeroom:
+      allOf: [{ $ref: "#/components/schemas/NewHomeroom" }]
+      description: Homeroom data for update (ID is excluded/ignored).
+    LinkTeachersRequest:
+      type: object
+      properties:
+        teachers:
+          type: array
+          items: { type: string, format: uuid }
+          description: Optional array of Teacher IDs to link.
+    AddHomeroomRequest:
+      type: object
+      properties:
+        newHomeroom: { $ref: "#/components/schemas/NewHomeroom" }
+        link: { $ref: "#/components/schemas/LinkTeachersRequest" }
+      required: [newHomeroom]
+    UpdateHomeroomRequest:
+      type: object
+      properties:
+        updatedHomeroom: { $ref: "#/components/schemas/UpdateHomeroom" }
+        link: { $ref: "#/components/schemas/LinkTeachersRequest" }
+      required: [updatedHomeroom]
+
+    # Add/Update schemas for Teacher, Student, Class, Assignment, Grade (similar pattern)
+    NewTeacher:
+      allOf: [{ $ref: "#/components/schemas/Teacher" }]
+      properties: { id: { readOnly: true } }
+    UpdateTeacher:
+      allOf: [{ $ref: "#/components/schemas/NewTeacher" }]
+    LinkClassesHomeroomsRequest:
+      type: object
+      properties:
+        classes: { type: array, items: { type: string, format: uuid } }
+        homerooms: { type: array, items: { type: string, format: uuid } }
+    AddTeacherRequest:
+      type: object
+      properties:
+        newTeacher: { $ref: "#/components/schemas/NewTeacher" }
+        link: { $ref: "#/components/schemas/LinkClassesHomeroomsRequest" }
+      required: [newTeacher]
+    UpdateTeacherRequest:
+      type: object
+      properties:
+        updatedTeacher: { $ref: "#/components/schemas/UpdateTeacher" }
+        link: { $ref: "#/components/schemas/LinkClassesHomeroomsRequest" }
+      required: [updatedTeacher]
+
+    # ... (Define New/Update/Add/Edit schemas for Student, Class, Assignment, Grade) ...
+    # Example for Student Add
+    NewStudent:
+      allOf: [{ $ref: "#/components/schemas/Student" }]
+      properties: { id: { readOnly: true } }
+    LinkStudentRequest:
+      type: object
+      properties:
+        homeroom: { type: string, format: uuid }
+        classes: { type: array, items: { type: string, format: uuid } }
+        assignments: { type: array, items: { type: string, format: uuid } } # Or empty array based on original type []
+    AddStudentRequest:
+      type: object
+      properties:
+        newStudent: { $ref: "#/components/schemas/NewStudent" }
+        link: { $ref: "#/components/schemas/LinkStudentRequest" }
+      required: [newStudent]
+
+    # Example for Class Edit
+    UpdateClass:
+      allOf: [{ $ref: "#/components/schemas/Class" }]
+      properties: { id: { readOnly: true } }
+    LinkUnlinkClassRequest:
+      type: object
+      properties:
+        assignments: { type: array, items: { type: string, format: uuid } }
+        students: { type: array, items: { type: string, format: uuid } }
+    EditClassRequest:
+      type: object
+      properties:
+        updatedClass: { $ref: "#/components/schemas/UpdateClass" }
+        link: { $ref: "#/components/schemas/LinkUnlinkClassRequest" }
+        unlink: { $ref: "#/components/schemas/LinkUnlinkClassRequest" }
+      required: [updatedClass]
+
+    # ... (Define other request bodies) ...
+
+    # --- Schemas for Responses (including relations) ---
+    # Define schemas that reflect the nested data returned by GET requests
+    HomeroomWithRelations:
+      allOf:
+        - $ref: "#/components/schemas/Homeroom"
+        - type: object
+          properties:
+            teachers:
+              type: array
+              items: { $ref: "#/components/schemas/Teacher" } # Or just TeacherSummary
+            students:
+              type: array
+              items: { $ref: "#/components/schemas/Student" } # Or just StudentSummary
+
+    TeacherWithRelations:
+      allOf:
+        - $ref: "#/components/schemas/Teacher"
+        - type: object
+          properties:
+            classes:
+              type: array
+              items: { $ref: "#/components/schemas/Class" } # Or ClassSummary
+            homerooms:
+              type: array
+              items: { $ref: "#/components/schemas/Homeroom" } # Or HomeroomSummary
+
+    # Example Student response schema based on getStudent query
+    StudentWithDeepRelations:
+      allOf:
+        - $ref: "#/components/schemas/Student"
+        - type: object
+          properties:
+            homeroom: # getStudent -> homeroom: { teachers: {} }
+              allOf:
+                - $ref: "#/components/schemas/Homeroom"
+                - type: object
+                  properties:
+                    teachers:
+                      type: array
+                      items: { $ref: "#/components/schemas/Teacher" }
+            classes: # getStudent -> classes: { assignments: { grades: {} }, teachers: {} }
+              type: array
+              items:
+                allOf:
+                  - $ref: "#/components/schemas/Class"
+                  - type: object
+                    properties:
+                      assignments: # Corrected typo from original
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: "#/components/schemas/Assignment"
+                            - type: object
+                              properties:
+                                grades:
+                                  type: array
+                                  items: { $ref: "#/components/schemas/Grade" }
+                      teachers:
+                        type: array
+                        items: { $ref: "#/components/schemas/Teacher" }
+            assignments: # getStudent -> assignments: { grades: {} }
+              type: array
+              items:
+                allOf:
+                  - $ref: "#/components/schemas/Assignment"
+                  - type: object
+                    properties:
+                      grades:
+                        type: array
+                        items: { $ref: "#/components/schemas/Grade" }
+            grades: # getStudent -> grades: {}
+              type: array
+              items: { $ref: "#/components/schemas/Grade" }
+
+    # ... (Define other WithRelations schemas for Class, Assignment, Grade based on queries) ...
+    ClassWithRelations:
+      allOf:
+        - $ref: "#/components/schemas/Class"
+        - type: object
+          properties:
+            assignments:
+              {
+                type: array,
+                items: { $ref: "#/components/schemas/Assignment" },
+              }
+            students:
+              { type: array, items: { $ref: "#/components/schemas/Student" } }
+
+    AssignmentWithRelations:
+      allOf:
+        - $ref: "#/components/schemas/Assignment"
+        - type: object
+          properties:
+            grades:
+              { type: array, items: { $ref: "#/components/schemas/Grade" } }
+            students: # assignments -> students: { grades: {} }
+              type: array
+              items:
+                allOf:
+                  - $ref: "#/components/schemas/Student"
+                  - type: object
+                    properties:
+                      grades:
+                        {
+                          type: array,
+                          items: { $ref: "#/components/schemas/Grade" },
+                        }
+            class: # assignments -> class: { teachers: {} }
+              allOf:
+                - $ref: "#/components/schemas/Class"
+                - type: object
+                  properties:
+                    teachers:
+                      {
+                        type: array,
+                        items: { $ref: "#/components/schemas/Teacher" },
+                      }
+
+    GradeWithRelations:
+      allOf:
+        - $ref: "#/components/schemas/Grade"
+        - type: object
+          properties:
+            student: # grades -> student: { homeroom: {} }
+              allOf:
+                - $ref: "#/components/schemas/Student"
+                - type: object
+                  properties:
+                    homeroom: { $ref: "#/components/schemas/Homeroom" }
+            assignment: # grades -> assignment: { class: {} }
+              allOf:
+                - $ref: "#/components/schemas/Assignment"
+                - type: object
+                  properties:
+                    class: { $ref: "#/components/schemas/Class" }
+
+    # --- Common Schemas ---
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: A description of the error.
+        details:
+          description: Optional additional error details.
+          nullable: true
+      required: [error]
+    BulkDeleteBody:
+      description: An array of resource IDs to delete.
+      type: array
+      items:
+        type: string
+        format: uuid
+      example:
+        [
+          "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+          "f47ac10b-58cc-4372-a567-0e02b2c3d480",
+        ]
+
+  parameters:
+    # Define reusable path parameters
+    HomeroomId:
+      name: homeroomId
+      in: path
+      required: true
+      description: ID of the Homeroom
+      schema: { type: string, format: uuid }
+    TeacherId:
+      name: teacherId
+      in: path
+      required: true
+      description: ID of the Teacher
+      schema: { type: string, format: uuid }
+    StudentId:
+      name: studentId
+      in: path
+      required: true
+      description: ID of the Student
+      schema: { type: string, format: uuid }
+    ClassId:
+      name: classId
+      in: path
+      required: true
+      description: ID of the Class
+      schema: { type: string, format: uuid }
+    AssignmentId:
+      name: assignmentId
+      in: path
+      required: true
+      description: ID of the Assignment
+      schema: { type: string, format: uuid }
+    GradeId:
+      name: gradeId
+      in: path
+      required: true
+      description: ID of the Grade
+      schema: { type: string, format: uuid }
+
+  responses:
+    # Define reusable responses
+    NotFound:
+      description: The specified resource was not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    BadRequest:
+      description: Invalid request syntax or parameters.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    InternalServerError:
+      description: An unexpected error occurred on the server.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  headers:
+    Location:
+      description: URL of the newly created resource.
+      schema:
+        type: string
+        format: uri # Use uri format for full URLs
+
+  # --- Reusable Path Items (to reduce repetition) ---
+  # Define common operations here and reference them in the 'paths' section
+  pathItems:
+    # --- Student Path Items ---
+    # --- Class Path Items ---
+    getClasses:
+      tags: [Classes]
+      summary: Get all Classes
+      operationId: getClasses
+      responses:
+        "200":
+          {
+            description: List of classes,
+            content:
+              {
+                application/json:
+                  {
+                    schema:
+                      {
+                        type: object,
+                        properties:
+                          {
+                            classes:
+                              {
+                                type: array,
+                                items:
+                                  {
+                                    $ref: "#/components/schemas/ClassWithRelations",
+                                  },
+                              },
+                          },
+                      },
+                  },
+              },
+          }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    addClass:
+      tags: [Classes]
+      summary: Add a new Class
+      operationId: addClass
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      properties:
+                        {
+                          newClass: { $ref: "#/components/schemas/Class" },
+                          link:
+                            {
+                              $ref: "#/components/schemas/LinkUnlinkClassRequest",
+                            },
+                        },
+                      required: [newClass],
+                    },
+                },
+            },
+        }
+      responses:
+        "201":
+          {
+            description: Class created,
+            content:
+              {
+                application/json:
+                  {
+                    schema: { $ref: "#/components/schemas/ClassWithRelations" },
+                  },
+              },
+            headers: { Location: { $ref: "#/components/headers/Location" } },
+          }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    deleteClasses:
+      tags: [Classes]
+      summary: Delete multiple Classes
+      operationId: deleteClasses
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/BulkDeleteBody" } },
+            },
+        }
+      responses:
+        "204": { description: Classes deleted }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    getClass:
+      tags: [Classes]
+      summary: Get a specific Class by ID
+      operationId: getClass
+      responses:
+        "200":
+          {
+            description: Class data,
+            content:
+              {
+                application/json:
+                  {
+                    schema:
+                      {
+                        type: object,
+                        properties:
+                          {
+                            classes:
+                              {
+                                type: array,
+                                items:
+                                  {
+                                    $ref: "#/components/schemas/ClassWithRelations",
+                                  },
+                              },
+                          },
+                      },
+                  },
+              },
+          }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    editClass:
+      tags: [Classes]
+      summary: Update a specific Class
+      operationId: editClass
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/EditClassRequest" } },
+            },
+        }
+      responses:
+        "200":
+          {
+            description: Class updated,
+            content:
+              {
+                application/json:
+                  {
+                    schema: { $ref: "#/components/schemas/ClassWithRelations" },
+                  },
+              },
+          }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    deleteClass:
+      tags: [Classes]
+      summary: Delete a specific Class
+      operationId: deleteClass
+      responses:
+        "204": { description: Class deleted }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+    # --- Assignment Path Items ---
+    getAssignments:
+      tags: [Assignments]
+      summary: Get all Assignments
+      operationId: getAssignments
+      responses:
+        "200":
+          {
+            description: List of assignments,
+            content:
+              {
+                application/json:
+                  {
+                    schema:
+                      {
+                        type: object,
+                        properties:
+                          {
+                            assignments:
+                              {
+                                type: array,
+                                items:
+                                  {
+                                    $ref: "#/components/schemas/AssignmentWithRelations",
+                                  },
+                              },
+                          },
+                      },
+                  },
+              },
+          }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    addAssignment:
+      tags: [Assignments]
+      summary: Add Assignment
+      operationId: addAssignment
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      properties:
+                        {
+                          newAssignment:
+                            { $ref: "#/components/schemas/Assignment" },
+                          link:
+                            {
+                              type: object,
+                              properties:
+                                {
+                                  grades:
+                                    {
+                                      type: array,
+                                      items: { type: string, format: uuid },
+                                    },
+                                  students:
+                                    {
+                                      type: array,
+                                      items: { type: string, format: uuid },
+                                    },
+                                  class: { type: string, format: uuid },
+                                },
+                            },
+                        },
+                      required: [newAssignment],
+                    },
+                },
+            },
+        }
+      responses:
+        "201":
+          {
+            description: Assignment created,
+            content:
+              {
+                application/json:
+                  {
+                    schema:
+                      { $ref: "#/components/schemas/AssignmentWithRelations" },
+                  },
+              },
+            headers: { Location: { $ref: "#/components/headers/Location" } },
+          }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    deleteAssignments:
+      tags: [Assignments]
+      summary: Delete multiple Assignments
+      operationId: deleteAssignments
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/BulkDeleteBody" } },
+            },
+        }
+      responses:
+        "204": { description: Assignments deleted }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    getAssignment:
+      tags: [Assignments]
+      summary: Get Assignment
+      operationId: getAssignment
+      responses:
+        "200":
+          {
+            description: Assignment data,
+            content:
+              {
+                application/json:
+                  {
+                    schema:
+                      {
+                        type: object,
+                        properties:
+                          {
+                            assignments:
+                              {
+                                type: array,
+                                items:
+                                  {
+                                    $ref: "#/components/schemas/AssignmentWithRelations",
+                                  },
+                              },
+                          },
+                      },
+                  },
+              },
+          }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    editAssignment:
+      tags: [Assignments]
+      summary: Edit Assignment
+      operationId: editAssignment
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      properties:
+                        {
+                          updatedAssignment:
+                            { $ref: "#/components/schemas/Assignment" },
+                          link:
+                            {
+                              type: object,
+                              properties:
+                                {
+                                  grades:
+                                    {
+                                      type: array,
+                                      items: { type: string, format: uuid },
+                                    },
+                                  students:
+                                    {
+                                      type: array,
+                                      items: { type: string, format: uuid },
+                                    },
+                                  class: { type: string, format: uuid },
+                                },
+                            },
+                          unlink:
+                            {
+                              type: object,
+                              properties:
+                                {
+                                  grades:
+                                    {
+                                      type: array,
+                                      items: { type: string, format: uuid },
+                                    },
+                                  students:
+                                    {
+                                      type: array,
+                                      items: { type: string, format: uuid },
+                                    },
+                                  class: { type: string, format: uuid },
+                                },
+                            },
+                        },
+                      required: [updatedAssignment],
+                    },
+                },
+            },
+        }
+      responses:
+        "200":
+          {
+            description: Assignment updated,
+            content:
+              {
+                application/json:
+                  {
+                    schema:
+                      { $ref: "#/components/schemas/AssignmentWithRelations" },
+                  },
+              },
+          }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    deleteAssignment:
+      tags: [Assignments]
+      summary: Delete Assignment
+      operationId: deleteAssignment
+      responses:
+        "204": { description: Assignment deleted }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+    # --- Grade Path Items ---
+    getGrades:
+      tags: [Grades]
+      summary: Get all Grades
+      operationId: getGrades
+      responses:
+        "200":
+          {
+            description: List of grades,
+            content:
+              {
+                application/json:
+                  {
+                    schema:
+                      {
+                        type: object,
+                        properties:
+                          {
+                            grades:
+                              {
+                                type: array,
+                                items:
+                                  {
+                                    $ref: "#/components/schemas/GradeWithRelations",
+                                  },
+                              },
+                          },
+                      },
+                  },
+              },
+          }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    addGrade:
+      tags: [Grades]
+      summary: Add Grade
+      operationId: addGrade
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      properties:
+                        {
+                          newGrade: { $ref: "#/components/schemas/Grade" },
+                          link:
+                            {
+                              type: object,
+                              properties:
+                                {
+                                  student: { type: string, format: uuid },
+                                  assignment: { type: string, format: uuid },
+                                },
+                            },
+                        },
+                      required: [newGrade],
+                    },
+                },
+            },
+        }
+      responses:
+        "201":
+          {
+            description: Grade created,
+            content:
+              {
+                application/json:
+                  {
+                    schema: { $ref: "#/components/schemas/GradeWithRelations" },
+                  },
+              },
+            headers: { Location: { $ref: "#/components/headers/Location" } },
+          }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    deleteGrades:
+      tags: [Grades]
+      summary: Delete multiple Grades
+      operationId: deleteGrades
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/BulkDeleteBody" } },
+            },
+        }
+      responses:
+        "204": { description: Grades deleted }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    getGrade:
+      tags: [Grades]
+      summary: Get Grade
+      operationId: getGrade
+      responses:
+        "200":
+          {
+            description: Grade data,
+            content:
+              {
+                application/json:
+                  {
+                    schema:
+                      {
+                        type: object,
+                        properties:
+                          {
+                            grades:
+                              {
+                                type: array,
+                                items:
+                                  {
+                                    $ref: "#/components/schemas/GradeWithRelations",
+                                  },
+                              },
+                          },
+                      },
+                  },
+              },
+          }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    editGrade:
+      tags: [Grades]
+      summary: Edit Grade
+      operationId: editGrade
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      properties:
+                        {
+                          updatedGrade: { $ref: "#/components/schemas/Grade" },
+                          link:
+                            {
+                              type: object,
+                              properties:
+                                {
+                                  student: { type: string, format: uuid },
+                                  assignment: { type: string, format: uuid },
+                                },
+                            },
+                          unlink:
+                            {
+                              type: object,
+                              properties:
+                                {
+                                  student: { type: string, format: uuid },
+                                  assignment: { type: string, format: uuid },
+                                },
+                            },
+                        },
+                      required: [updatedGrade],
+                    },
+                },
+            },
+        }
+      responses:
+        "200":
+          {
+            description: Grade updated,
+            content:
+              {
+                application/json:
+                  {
+                    schema: { $ref: "#/components/schemas/GradeWithRelations" },
+                  },
+              },
+          }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    deleteGrade:
+      tags: [Grades]
+      summary: Delete Grade
+      operationId: deleteGrade
+      responses:
+        "204": { description: Grade deleted }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }

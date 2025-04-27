@@ -1,0 +1,263 @@
+// lib/classes/school_store.dart
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:project/classes/api_client.dart';
+import 'package:project/classes/grade.dart';
+import 'package:project/classes/homeroom.dart';
+import 'package:project/classes/student.dart';
+import 'package:project/classes/teacher.dart';
+
+class SchoolStore extends ChangeNotifier {
+  final ApiClient _api;
+
+  bool isLoading = false;
+  String? error;
+
+  List<Homeroom> homerooms = [];
+  List<Grade> gradeOptions = [];
+  List<Teacher> _allTeachers = [];
+  List<Student> _allStudents = [];
+
+  SchoolStore(this._api);
+
+  List<Teacher> get allTeachers => _allTeachers;
+  List<Student> get allStudents => _allStudents;
+  List<Grade> get availableGrades => gradeOptions;
+
+  /// Loads all homerooms, teachers, students, and grade options from the API.
+  Future<void> loadHomerooms() async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      final data = await _api.getSchoolData();
+
+      homerooms = data['homerooms'] as List<Homeroom>;
+      gradeOptions = data['grades'] as List<Grade>;
+      _allTeachers = data['teachers'] as List<Teacher>;
+      _allStudents = data['students'] as List<Student>;
+    } catch (e) {
+      error = e.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Your existing CRUD methods (deleteHomeroom, addHomeroom, updateHomeroom)
+  // would need to be updated to work with the new structure
+
+  /// Gets homerooms for a specific teacher
+  List<Homeroom> getHomeroomsForTeacher(String teacherId) {
+    return homerooms
+        .where((h) => h.teachers.any((t) => t.id == teacherId))
+        .toList();
+  }
+
+  /// Gets homerooms for a specific student
+  List<Homeroom> getHomeroomsForStudent(String studentId) {
+    return homerooms
+        .where((h) => h.students.any((s) => s.id == studentId))
+        .toList();
+  }
+
+  /// Finds a teacher by their ID
+  Teacher? findTeacherById(String id) {
+    try {
+      return _allTeachers.firstWhere((t) => t.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Finds a student by their ID
+  Student? findStudentById(String id) {
+    try {
+      return _allStudents.firstWhere((s) => s.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Gets homerooms for a specific grade
+  List<Homeroom> getHomeroomsForGrade(String gradeValue) {
+    return homerooms.where((h) => h.grade.value == gradeValue).toList();
+  }
+
+  /// Simplified method to add a student to a homeroom
+  Future<bool> addStudentToHomeroom(String homeroomId, Student student) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      // Find the homeroom
+      final index = homerooms.indexWhere((h) => h.id == homeroomId);
+      if (index == -1) {
+        throw Exception('Homeroom not found');
+      }
+
+      final homeroom = homerooms[index];
+
+      // Check if student already exists in the homeroom
+      if (homeroom.students.any((s) => s.id == student.id)) {
+        throw Exception('Student already exists in this homeroom');
+      }
+
+      // Make the simple API call
+      final success = await _api.addStudentToHomeroom(homeroomId, student.id);
+
+      if (success) {
+        // Reload the homeroom data
+        print('Successfully sent update request. Reloading homeroom data...');
+
+        try {
+          // Fetch fresh data for this homeroom
+          await reloadHomeroom(homeroomId);
+          print('Successfully reloaded homeroom data');
+        } catch (e) {
+          // If reload fails, update locally since we know the server change succeeded
+          print('Error reloading homeroom: $e');
+
+          // Local update as fallback
+          final updatedStudents = [...homeroom.students, student];
+          homerooms[index] = Homeroom(
+            id: homeroom.id,
+            grade: homeroom.grade,
+            name: homeroom.name,
+            teachers: homeroom.teachers,
+            students: updatedStudents,
+          );
+        }
+
+        // Refresh the cache of students
+        _refreshStudentsCache();
+        return true;
+      } else {
+        throw Exception('Failed to add student to homeroom');
+      }
+    } catch (e) {
+      error = e.toString();
+      print('Error adding student to homeroom: $e');
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Add multiple students to a homeroom at once
+  Future<bool> addStudentsToHomeroom(
+    String homeroomId,
+    List<Student> students,
+  ) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      // Extract student IDs
+      final studentIds = students.map((s) => s.id).toList();
+
+      // Make the API call
+      final success = await _api.addStudentsToHomeroom(homeroomId, studentIds);
+
+      if (success) {
+        // Reload the homeroom data
+        await reloadHomeroom(homeroomId);
+
+        // Refresh the cache of students
+        _refreshStudentsCache();
+        return true;
+      } else {
+        throw Exception('Failed to add students to homeroom');
+      }
+    } catch (e) {
+      error = e.toString();
+      print('Error adding students to homeroom: $e');
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Add this new method to reload a single homeroom
+  Future<void> reloadHomeroom(String homeroomId) async {
+    try {
+      // Fetch the latest data from server
+      final data = await _api.getSchoolData();
+      final updatedHomerooms = data['homerooms'] as List<Homeroom>;
+
+      // Find and update the specific homeroom
+      final index = homerooms.indexWhere((h) => h.id == homeroomId);
+      if (index >= 0) {
+        final updatedHomeroom = updatedHomerooms.firstWhere(
+          (h) => h.id == homeroomId,
+          orElse:
+              () =>
+                  throw Exception('Homeroom not found on server after update'),
+        );
+
+        homerooms[index] = updatedHomeroom;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error reloading homeroom data: $e');
+      rethrow;
+    }
+  }
+
+  void _refreshStudentsCache() {
+    final studentSet = <String>{};
+    final studentList = <Student>[];
+
+    // Collect all students across homerooms
+    for (final homeroom in homerooms) {
+      for (final student in homeroom.students) {
+        if (!studentSet.contains(student.id)) {
+          studentSet.add(student.id);
+          studentList.add(student);
+        }
+      }
+    }
+
+    // Sort alphabetically by name
+    studentList.sort((a, b) => a.name.compareTo(b.name));
+
+    // Update cached list
+    _allStudents = studentList;
+  }
+
+  Future<Student> createStudent(String name) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      final response = await _api.post(
+        'students',
+        jsonEncode({
+          'newStudent': {'name': name},
+        }),
+      );
+
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final student = Student.fromJson(responseData['students'][0]);
+
+      // Add to the cache
+      _allStudents = [..._allStudents, student];
+      _allStudents.sort((a, b) => a.name.compareTo(b.name));
+
+      return student;
+    } catch (e) {
+      error = e.toString();
+      rethrow;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+}
