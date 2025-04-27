@@ -289,7 +289,6 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
                           ? true
                           : null),
               onChanged: (bool? value) {
-                debugPrint('Checkbox value: $value');
                 setState(() {
                   if (value == true) {
                     selectedHomerooms = List.from(widget.homerooms);
