@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project/components/actions_popover_button.dart';
 
 class HomeroomLine extends StatelessWidget {
   const HomeroomLine({
@@ -12,6 +13,14 @@ class HomeroomLine extends StatelessWidget {
   final String grade;
   final List<String> teachers;
   final int students;
+
+  onTapEdit() {
+    // Handle edit action
+  }
+
+  onTapDelete() {
+    // Handle delete action
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +41,15 @@ class HomeroomLine extends StatelessWidget {
                 "$name ($grade)",
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
-              Text("Teacher: ${teachers.join(', ')}"),
+              Text("Teacher(s): ${teachers.join(', ')}"),
             ],
           ),
-          Text('$students students'),
+          Row(
+            children: [
+              Text('$students students'),
+              ActionsPopoverButton(onEdit: onTapEdit, onDelete: onTapDelete),
+            ],
+          ),
         ],
       ),
     );
