@@ -39,12 +39,23 @@ class ApiClient {
 
   /// Simple method to add a student to a homeroom
   /// Returns true if successful, false otherwise
-  Future<bool> addStudentToHomeroom(String homeroomId, String studentId) async {
+  Future<bool> addStudentToHomeroom(
+    String homeroomId,
+    String studentId, {
+    required String homeroomName,
+    required String grade,
+  }) async {
     try {
       print('Adding student $studentId to homeroom $homeroomId');
 
-      // Simple request structure
+      // Updated request structure with all required fields
       final requestBody = jsonEncode({
+        'updatedHomeroom': {
+          'id': homeroomId,
+          'name': homeroomName, // Required field
+          'grade': grade, // Required field
+          'students': [],
+        },
         'link': {
           'students': [studentId],
         },
@@ -57,7 +68,6 @@ class ApiClient {
       };
 
       print('Making PUT request to: $_host/homerooms/$homeroomId');
-
       print('\nRequest body: $requestBody');
 
       final response = await http.put(
@@ -79,13 +89,21 @@ class ApiClient {
   /// Add multiple students to a homeroom at once
   Future<bool> addStudentsToHomeroom(
     String homeroomId,
-    List<String> studentIds,
-  ) async {
+    List<String> studentIds, {
+    required String homeroomName,
+    required String grade,
+  }) async {
     try {
       print('Adding ${studentIds.length} students to homeroom $homeroomId');
 
-      // Simple request structure for multiple students
+      // Include all required fields in the request structure
       final requestBody = jsonEncode({
+        'updatedHomeroom': {
+          'id': homeroomId,
+          'name': homeroomName, // Required field
+          'grade': grade, // Required field
+          'students': [],
+        },
         'link': {'students': studentIds},
         'unlink': {'students': []},
       });
@@ -96,6 +114,7 @@ class ApiClient {
       };
 
       print('Making PUT request to: $_host/homerooms/$homeroomId');
+      print('Request body: $requestBody');
 
       final response = await http.put(
         Uri.parse('$_host/homerooms/$homeroomId'),

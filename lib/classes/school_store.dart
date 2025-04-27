@@ -86,7 +86,6 @@ class SchoolStore extends ChangeNotifier {
     return homerooms.where((h) => h.grade.value == gradeValue).toList();
   }
 
-  /// Simplified method to add a student to a homeroom
   Future<bool> addStudentToHomeroom(String homeroomId, Student student) async {
     isLoading = true;
     error = null;
@@ -106,8 +105,13 @@ class SchoolStore extends ChangeNotifier {
         throw Exception('Student already exists in this homeroom');
       }
 
-      // Make the simple API call
-      final success = await _api.addStudentToHomeroom(homeroomId, student.id);
+      // Make the API call with all required fields
+      final success = await _api.addStudentToHomeroom(
+        homeroomId,
+        student.id,
+        homeroomName: homeroom.name,
+        grade: homeroom.grade.toApiString(),
+      );
 
       if (success) {
         // Reload the homeroom data
@@ -158,15 +162,48 @@ class SchoolStore extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Find the homeroom
+      final index = homerooms.indexWhere((h) => h.id == homeroomId);
+      if (index == -1) {
+        throw Exception('Homeroom not found');
+      }
+
+      final homeroom = homerooms[index];
+
       // Extract student IDs
       final studentIds = students.map((s) => s.id).toList();
 
-      // Make the API call
-      final success = await _api.addStudentsToHomeroom(homeroomId, studentIds);
+      // Make the API call with all required fields
+      final success = await _api.addStudentsToHomeroom(
+        homeroomId,
+        studentIds,
+        homeroomName: homeroom.name,
+        grade: homeroom.grade.toApiString(),
+      );
 
       if (success) {
         // Reload the homeroom data
-        await reloadHomeroom(homeroomId);
+        try {
+          await reloadHomeroom(homeroomId);
+        } catch (e) {
+          print('Error reloading homeroom: $e');
+
+          // Local update as fallback
+          final updatedStudents = [
+            ...homeroom.students,
+            ...students.where(
+              (s) => !homeroom.students.any((existing) => existing.id == s.id),
+            ),
+          ];
+
+          homerooms[index] = Homeroom(
+            id: homeroom.id,
+            grade: homeroom.grade,
+            name: homeroom.name,
+            teachers: homeroom.teachers,
+            students: updatedStudents,
+          );
+        }
 
         // Refresh the cache of students
         _refreshStudentsCache();
