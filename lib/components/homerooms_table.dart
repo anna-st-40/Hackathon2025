@@ -1,5 +1,6 @@
 // lib/components/homerooms_data_table.dart
 import 'package:flutter/material.dart';
+import 'package:project/classes/grade.dart';
 import 'package:project/classes/homeroom.dart';
 
 typedef HomeroomTapCallback = void Function(Homeroom homeroom);
@@ -46,12 +47,12 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
 
     switch (_sortField) {
       case HomeroomSortField.grade:
-        homerooms.sort(
-          (a, b) =>
-              _ascending
-                  ? a.grade.name.compareTo(b.grade.name)
-                  : b.grade.name.compareTo(a.grade.name),
-        );
+        homerooms.sort((a, b) {
+          // Custom grade ordering logic
+          return _ascending
+              ? _compareGrades(a.grade, b.grade)
+              : _compareGrades(b.grade, a.grade);
+        });
       case HomeroomSortField.name:
         homerooms.sort(
           (a, b) =>
@@ -75,6 +76,36 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
     }
 
     return homerooms;
+  }
+
+  int _compareGrades(Grade a, Grade b) {
+    // Special handling for Kindergarten
+    if (a.name.contains('Kindergarten') && !b.name.contains('Kindergarten')) {
+      return -1; // Kindergarten comes first
+    } else if (!a.name.contains('Kindergarten') &&
+        b.name.contains('Kindergarten')) {
+      return 1; // Kindergarten comes first
+    } else if (a.name.contains('Kindergarten') &&
+        b.name.contains('Kindergarten')) {
+      return 0; // Both are Kindergarten, so they're equal
+    }
+
+    // For numerical grades, extract the numbers and compare
+    final aGradeNumber = _extractGradeNumber(a.name);
+    final bGradeNumber = _extractGradeNumber(b.name);
+
+    return aGradeNumber.compareTo(bGradeNumber);
+  }
+
+  int _extractGradeNumber(String gradeName) {
+    // Extract the numerical value from grade names like "1st Grade", "2nd Grade", etc.
+    final match = RegExp(r'(\d+)').firstMatch(gradeName);
+    if (match != null) {
+      return int.parse(match.group(1)!);
+    }
+    // If no number is found, return a default value
+    // (this should not happen with proper grade naming)
+    return 0;
   }
 
   Widget _buildSortableHeader(String text, HomeroomSortField field, int flex) {

@@ -9,4 +9,13 @@ class Teacher {
   }
 
   Map<String, dynamic> toJson() => {'id': id, 'name': name};
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Teacher && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

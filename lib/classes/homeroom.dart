@@ -19,8 +19,8 @@ class Homeroom {
 
   factory Homeroom.fromJson(Map<String, dynamic> json) {
     // Parse grade string to Grade object
-    final rawGrade = json['grade'];
-    final grade = Grade.fromString(rawGrade);
+    final rawGradeValue = json['grade'] as String;
+    final grade = Grade(value: rawGradeValue, name: "${rawGradeValue}th Grade");
 
     // Parse teachers list
     final teacherMaps = json['teachers'] as List<dynamic>;
@@ -46,4 +46,13 @@ class Homeroom {
     'teachers': teachers.map((t) => t.toJson()).toList(),
     'students': students.map((s) => s.toJson()).toList(),
   };
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Homeroom && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

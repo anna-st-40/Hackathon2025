@@ -34,12 +34,29 @@ class SchoolStore extends ChangeNotifier {
     try {
       final data = await _api.getSchoolData();
 
-      // For homerooms, teachers, and students, use the data as is
-      homerooms = data['homerooms'] as List<Homeroom>;
-      _allTeachers = data['teachers'] as List<Teacher>;
-      _allStudents = data['students'] as List<Student>;
+      // Deduplicate homerooms by ID
+      final rawHomerooms = data['homerooms'] as List<Homeroom>;
+      final uniqueHomerooms = <String, Homeroom>{};
+      for (var homeroom in rawHomerooms) {
+        uniqueHomerooms[homeroom.id] = homeroom;
+      }
+      homerooms = uniqueHomerooms.values.toList();
 
-      // For grades, ensure we're using unique instances by explicitly using
+      // Deduplicate teachers by ID
+      final rawTeachers = data['teachers'] as List<Teacher>;
+      final uniqueTeachers = <String, Teacher>{};
+      for (var teacher in rawTeachers) {
+        uniqueTeachers[teacher.id] = teacher;
+      }
+      _allTeachers = uniqueTeachers.values.toList();
+
+      // Deduplicate students by ID
+      final rawStudents = data['students'] as List<Student>;
+      final uniqueStudents = <String, Student>{};
+      for (var student in rawStudents) {
+        uniqueStudents[student.id] = student;
+      }
+      _allStudents = uniqueStudents.values.toList();
       // the Grade factory constructor that checks the cache
       final rawGrades = data['grades'] as List<Grade>;
 
@@ -279,27 +296,27 @@ class SchoolStore extends ChangeNotifier {
   }
 
   void _refreshStudentsCache() {
-    final studentSet = <String>{};
-    final studentList = <Student>[];
+    final studentById = <String, Student>{};
 
-    // Collect all students across homerooms
+    // First, save all existing students by ID
+    for (final student in _allStudents) {
+      studentById[student.id] = student;
+    }
+
+    // Then update with students from homerooms, preserving existing instances
     for (final homeroom in homerooms) {
       for (final student in homeroom.students) {
-        if (!studentSet.contains(student.id)) {
-          studentSet.add(student.id);
-          studentList.add(student);
-        }
+        studentById[student.id] = student;
       }
     }
 
-    // Sort alphabetically by name
+    // Create the final list and sort it
+    final studentList = studentById.values.toList();
     studentList.sort((a, b) => a.name.compareTo(b.name));
 
-    // Update cached list
     _allStudents = studentList;
   }
 
-  /// Deletes multiple homerooms by their IDs
   /// Deletes multiple homerooms by their IDs
   Future<bool> deleteHomerooms(List<String> homeroomIds) async {
     if (homeroomIds.isEmpty) return true;
