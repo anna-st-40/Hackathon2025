@@ -1,40 +1,50 @@
 class Grade {
-  final String id;
-  final String name;
   final String value;
+  final String name;
 
-  Grade({required this.id, required this.name, required this.value});
+  // Private constructor
+  const Grade._({required this.value, required this.name});
 
-  factory Grade.fromJson(Map<String, dynamic> json) {
-    return Grade(id: json['id'], name: json['name'], value: json['value']);
+  // Cache of instances
+  static final Map<String, Grade> _cache = {};
+
+  // Factory constructor to get existing or create new instance
+  factory Grade({required String value, required String name}) {
+    return _cache.putIfAbsent(value, () => Grade._(value: value, name: name));
   }
 
-  factory Grade.fromString(String gradeValue) {
-    // This handles cases where we only have the grade value
-    // like in the homeroom JSON objects
-    switch (gradeValue) {
-      case '0':
-        return Grade(id: '', name: 'Kindergarten', value: '0');
-      case '1':
-        return Grade(id: '', name: '1st Grade', value: '1');
-      case '2':
-        return Grade(id: '', name: '2nd Grade', value: '2');
-      case '3':
-        return Grade(id: '', name: '3rd Grade', value: '3');
-      default:
-        if (int.tryParse(gradeValue) != null) {
-          return Grade(
-            id: '',
-            name: '${gradeValue}th Grade',
-            value: gradeValue,
-          );
-        }
-        return Grade(id: '', name: 'Unknown', value: gradeValue);
+  // Create from JSON - ensures singleton pattern is maintained
+  factory Grade.fromJson(Map<String, dynamic> json) {
+    final value = json['value'] as String;
+    final name = json['name'] as String;
+    return Grade(value: value, name: name);
+  }
+
+  // Create from string - ensures singleton pattern
+  static Grade fromString(String gradeString) {
+    // Try to parse standard formats
+    if (gradeString.endsWith('th Grade') ||
+        gradeString.endsWith('nd Grade') ||
+        gradeString.endsWith('st Grade') ||
+        gradeString.endsWith('rd Grade')) {
+      return Grade(value: gradeString, name: gradeString);
     }
+
+    // Default case for other formats
+    return Grade(value: gradeString, name: '$gradeString Grade');
   }
 
   String toApiString() => value;
 
   @override
-  String toString() => name;
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Grade && other.value == value;
+  }
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toString() => 'Grade($name)';
 }

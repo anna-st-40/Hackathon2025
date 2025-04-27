@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project/components/add_homeroom_dialog.dart';
 import 'package:project/pages/homeroom.dart';
 import 'package:project/pages/student_list.dart';
 import 'package:project/pages/teachers_list.dart';
@@ -137,7 +138,12 @@ class HomePage extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         _actionButton(
-          () {}, // Add your action here
+          () {
+            showDialog(
+              context: context,
+              builder: (context) => const AddHomeroomDialog(),
+            );
+          }, // Add your action here
           const Icon(Icons.add),
           'Add New Homeroom',
           theme,

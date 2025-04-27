@@ -9,4 +9,7 @@ class Student {
   }
 
   Map<String, dynamic> toJson() => {'id': id, 'name': name};
+
+  @override
+  String toString() => 'Student(id: $id, name: $name)';
 }

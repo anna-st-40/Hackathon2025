@@ -19,6 +19,7 @@ class _HomeroomLandingPageState extends State<HomeroomLandingPage> {
   void initState() {
     super.initState();
     _homeroom = widget.homeroom;
+    print('homeroom: $_homeroom');
   }
 
   void _showAddStudentDialog(BuildContext context) {

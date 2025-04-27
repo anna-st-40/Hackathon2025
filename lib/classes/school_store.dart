@@ -34,10 +34,16 @@ class SchoolStore extends ChangeNotifier {
     try {
       final data = await _api.getSchoolData();
 
+      // For homerooms, teachers, and students, use the data as is
       homerooms = data['homerooms'] as List<Homeroom>;
-      gradeOptions = data['grades'] as List<Grade>;
       _allTeachers = data['teachers'] as List<Teacher>;
       _allStudents = data['students'] as List<Student>;
+
+      // For grades, ensure we're using the singleton pattern
+      // This avoids duplicate Grade objects with the same value
+      final rawGrades = data['grades'] as List<Grade>;
+      gradeOptions =
+          rawGrades.map((g) => Grade(value: g.value, name: g.name)).toList();
     } catch (e) {
       error = e.toString();
     } finally {
@@ -46,8 +52,66 @@ class SchoolStore extends ChangeNotifier {
     }
   }
 
-  // Your existing CRUD methods (deleteHomeroom, addHomeroom, updateHomeroom)
-  // would need to be updated to work with the new structure
+  /// Creates a new homeroom
+  /// Creates a new homeroom
+  Future<bool> createHomeroom({
+    required String name,
+    required Grade grade,
+    required List<String> teacherIds,
+  }) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      // Make API call to create homeroom and get its ID
+      final newHomeroomId = await _api.createHomeroom(
+        name: name,
+        grade: grade.toApiString(),
+        teacherIds: teacherIds,
+      );
+
+      print('Homeroom created with ID: $newHomeroomId');
+
+      // Since we only got an ID back, create a temporary homeroom object
+      // with the information we have
+      final teachers =
+          teacherIds
+              .map((id) => findTeacherById(id))
+              .where((t) => t != null)
+              .cast<Teacher>()
+              .toList();
+
+      final newHomeroom = Homeroom(
+        id: newHomeroomId,
+        grade: grade,
+        name: name,
+        teachers: teachers,
+        students: [], // New homeroom has no students yet
+      );
+
+      // Add to local list
+      homerooms.add(newHomeroom);
+
+      // Optional: Refresh all data to ensure we have the latest
+      try {
+        await loadHomerooms();
+      } catch (refreshError) {
+        print('Warning: Could not refresh homerooms: $refreshError');
+        // Continue since we already created a local representation
+      }
+
+      isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      error = e.toString();
+      print('Error creating homeroom: $e');
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
 
   /// Gets homerooms for a specific teacher
   List<Homeroom> getHomeroomsForTeacher(String teacherId) {
