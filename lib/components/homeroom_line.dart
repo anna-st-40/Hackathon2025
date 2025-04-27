@@ -15,16 +15,29 @@ class HomeroomLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(name),
-        const SizedBox(width: 8),
-        Text(grade),
-        const SizedBox(width: 8),
-        Text(teachers.join(', ')),
-        const SizedBox(width: 8),
-        Text('$students students'),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      margin: const EdgeInsets.symmetric(vertical: 4.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "$name ($grade)",
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              Text("Teacher: ${teachers.join(', ')}"),
+            ],
+          ),
+          Text('$students students'),
+        ],
+      ),
     );
   }
 }

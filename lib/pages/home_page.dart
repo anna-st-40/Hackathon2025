@@ -18,12 +18,25 @@ class _HomePageState extends State<HomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            HomeroomLine(name: "Homeroom 1", grade: "9th Grade", teachers: ["Jane Doe"], students: 23),
-            HomeroomLine(name: "Homeroom 2", grade: "10th Grade", teachers: ["John Smith"], students: 25),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              HomeroomLine(
+                name: "Homeroom 1",
+                grade: "9th Grade",
+                teachers: ["Jane Doe"],
+                students: 23,
+              ),
+              HomeroomLine(
+                name: "Homeroom 2",
+                grade: "10th Grade",
+                teachers: ["John Smith"],
+                students: 25,
+              ),
+            ],
+          ),
         ),
       ),
     );
