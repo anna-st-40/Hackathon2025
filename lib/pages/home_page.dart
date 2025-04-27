@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:project/components/homeroom_line.dart';
 import 'package:project/classes/api_client.dart';
 import 'package:project/classes/homeroom.dart';
+import 'package:project/components/homerooms_table.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.title});
@@ -72,22 +72,7 @@ class _HomePageState extends State<HomePage> {
     } else {
       body = Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children:
-              _homerooms.map((hr) {
-                final teacherNames =
-                    hr.teachers.isNotEmpty
-                        ? hr.teachers.map((t) => t.name).toList()
-                        : ['(no teacher assigned)'];
-                return HomeroomLine(
-                  name: hr.name,
-                  grade: hr.grade,
-                  teachers: teacherNames,
-                  students: hr.students.length,
-                );
-              }).toList(),
-        ),
+        child: HomeroomsTable(homerooms: _homerooms),
       );
     }
 
@@ -96,7 +81,7 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: Center(child: SingleChildScrollView(child: body)),
+      body: body,
     );
   }
 }
