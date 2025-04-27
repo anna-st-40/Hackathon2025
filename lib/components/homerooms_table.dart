@@ -185,39 +185,27 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
                 ),
                 child: Row(
                   children: [
-                    Expanded(
-                      flex: col1Flex,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Text(
-                          hr.grade.name,
-                          style: theme.textTheme.bodyMedium,
-                        ),
+                    // Grade
+                    _dataCell(
+                      col1Flex,
+                      hr.grade.name,
+                      theme.textTheme.bodyMedium,
+                    ),
+                    // Name
+                    _dataCell(
+                      col2Flex,
+                      hr.name,
+                      theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Expanded(
-                      flex: col2Flex,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Text(
-                          hr.name,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                    // Teachers
+                    _dataCell(
+                      col3Flex,
+                      hr.teachers.map((t) => t.name).join(', '),
+                      theme.textTheme.bodyMedium,
                     ),
-                    Expanded(
-                      flex: col3Flex,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Text(
-                          hr.teachers.map((t) => t.name).join(', '),
-                          style: theme.textTheme.bodyMedium,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
+                    // Students count
                     SizedBox(
                       width: col4Width,
                       child: Padding(
@@ -248,6 +236,16 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Expanded _dataCell(int flex, String text, TextStyle? style) {
+    return Expanded(
+      flex: flex,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Text(text, style: style ?? const TextStyle()),
       ),
     );
   }
