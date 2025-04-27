@@ -230,7 +230,7 @@ class _HomeroomLandingPageState extends State<HomeroomLandingPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.groups_outlined, size: 64, color: Colors.white),
+            Icon(Icons.groups_outlined, size: 64, color: Theme.of(context).colorScheme.primary),
             const SizedBox(height: 16),
             const Text(
               'No students in this homeroom yet',
