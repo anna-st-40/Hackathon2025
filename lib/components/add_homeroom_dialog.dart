@@ -69,13 +69,16 @@ class AddHomeroomDialogState extends State<AddHomeroomDialog> {
                       border: OutlineInputBorder(),
                     ),
                     value: _selectedGrade,
-                    items:
-                        store.availableGrades.map((grade) {
-                          return DropdownMenuItem<Grade>(
-                            value: grade,
-                            child: Text(grade.name),
-                          );
-                        }).toList(),
+                    items: (() {
+                      final sortedGrades = List<Grade>.from(store.availableGrades)
+                        ..sort((a, b) => a.value.compareTo(b.value));
+                      return sortedGrades.map((grade) {
+                        return DropdownMenuItem<Grade>(
+                          value: grade,
+                          child: Text(grade.name),
+                        );
+                      }).toList();
+                    })(),
                     onChanged: (Grade? value) {
                       setState(() {
                         _selectedGrade = value;
