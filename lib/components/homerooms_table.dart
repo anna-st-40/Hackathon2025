@@ -119,284 +119,240 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
     const int col3Flex = 3; // Teachers
     const double col4Width = 120.0; // Students count
 
-    final int totalFlex = col1Flex + col2Flex + col3Flex;
-
     return Card(
       elevation: 2,
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       clipBehavior: Clip.antiAlias,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // Available width for the columns with flex (excluding fixed width columns)
-          final double flexWidth =
-              constraints.maxWidth - col4Width - paddingH * 2;
-
-          // Calculate divider positions
-          final double divider1Pos =
-              (flexWidth * col1Flex / totalFlex) + paddingH;
-          final double divider2Pos =
-              divider1Pos + (flexWidth * col2Flex / totalFlex);
-          final double divider3Pos =
-              constraints.maxWidth - col4Width - paddingH;
-
           return Stack(
             children: [
-              // Continuous vertical dividers
-              Positioned(
-                left: divider1Pos,
-                top: 50.0, // Start below the title bar
-                bottom: 0,
-                child: Container(width: 1, color: theme.dividerColor),
-              ),
-              Positioned(
-                left: divider2Pos,
-                top: 50.0,
-                bottom: 0,
-                child: Container(width: 1, color: theme.dividerColor),
-              ),
-              Positioned(
-                left: divider3Pos,
-                top: 50.0,
-                bottom: 0,
-                child: Container(width: 1, color: theme.dividerColor),
-              ),
-
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Title bar
-                  Container(
-                    color: theme.colorScheme.primaryContainer,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16,
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          'Homerooms',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            color: theme.colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Spacer(),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.sort,
-                              size: 16,
-                              color: theme.colorScheme.onPrimaryContainer,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Click on column headers to sort',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Headers row
-                  Material(
-                    color: Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 16.0,
-                        horizontal: paddingH,
-                      ),
-                      child: Row(
-                        children: [
-                          _buildSortableHeader(
-                            'Grade',
-                            HomeroomSortField.grade,
-                            col1Flex,
-                          ),
-                          _buildSortableHeader(
-                            'Name',
-                            HomeroomSortField.name,
-                            col2Flex,
-                          ),
-                          _buildSortableHeader(
-                            'Teachers',
-                            HomeroomSortField.teachers,
-                            col3Flex,
-                          ),
-                          SizedBox(
-                            width: col4Width,
-                            child: InkWell(
-                              onTap:
-                                  () => _sort(HomeroomSortField.studentCount),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        'Students',
-                                        style: theme.textTheme.titleMedium
-                                            ?.copyWith(
-                                              fontWeight:
-                                                  _sortField ==
-                                                          HomeroomSortField
-                                                              .studentCount
-                                                      ? FontWeight.bold
-                                                      : FontWeight.normal,
-                                              color:
-                                                  _sortField ==
-                                                          HomeroomSortField
-                                                              .studentCount
-                                                      ? theme
-                                                          .colorScheme
-                                                          .primary
-                                                      : null,
-                                            ),
-                                        overflow:
-                                            TextOverflow
-                                                .ellipsis, // Add this to handle overflow
-                                      ),
-                                    ),
-                                    if (_sortField ==
-                                        HomeroomSortField.studentCount) ...[
-                                      const SizedBox(width: 4),
-                                      Icon(
-                                        _ascending
-                                            ? Icons.arrow_upward
-                                            : Icons.arrow_downward,
-                                        size: 16,
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  _titleBar(theme),
+                  _headersRow(
+                    paddingH,
+                    col1Flex,
+                    col2Flex,
+                    col3Flex,
+                    col4Width,
+                    theme,
                   ),
 
                   Divider(height: 1, thickness: 1),
 
-                  // Scrollable content
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: _sortedHomerooms.length,
-                      separatorBuilder:
-                          (_, __) => Divider(height: 1, thickness: 1),
-                      itemBuilder: (context, index) {
-                        final hr = _sortedHomerooms[index];
-                        return Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => widget.onTap(hr),
-                            hoverColor: Colors.white,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 12.0,
-                                horizontal: paddingH,
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    flex: col1Flex,
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16.0,
-                                      ),
-                                      child: Text(
-                                        hr.grade.name,
-                                        style: theme.textTheme.bodyMedium,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    flex: col2Flex,
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16.0,
-                                      ),
-                                      child: Text(
-                                        hr.name,
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    flex: col3Flex,
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16.0,
-                                      ),
-                                      child: Text(
-                                        hr.teachers
-                                            .map((t) => t.name)
-                                            .join(', '),
-                                        style: theme.textTheme.bodyMedium,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: col4Width,
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16.0,
-                                      ),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color:
-                                              theme
-                                                  .colorScheme
-                                                  .primaryContainer,
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          hr.students.length.toString(),
-                                          style: theme.textTheme.bodyMedium
-                                              ?.copyWith(
-                                                color:
-                                                    theme
-                                                        .colorScheme
-                                                        .onPrimaryContainer,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                  _scrollableTableContent(
+                    paddingH,
+                    col1Flex,
+                    theme,
+                    col2Flex,
+                    col3Flex,
+                    col4Width,
                   ),
                 ],
               ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Expanded _scrollableTableContent(
+    double paddingH,
+    int col1Flex,
+    ThemeData theme,
+    int col2Flex,
+    int col3Flex,
+    double col4Width,
+  ) {
+    return Expanded(
+      child: ListView.separated(
+        itemCount: _sortedHomerooms.length,
+        separatorBuilder: (_, __) => Divider(height: 1, thickness: 1),
+        itemBuilder: (context, index) {
+          final hr = _sortedHomerooms[index];
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => widget.onTap(hr),
+              hoverColor: Colors.white,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  vertical: 12.0,
+                  horizontal: paddingH,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: col1Flex,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Text(
+                          hr.grade.name,
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: col2Flex,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Text(
+                          hr.name,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: col3Flex,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Text(
+                          hr.teachers.map((t) => t.name).join(', '),
+                          style: theme.textTheme.bodyMedium,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: col4Width,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            hr.students.length.toString(),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Material _headersRow(
+    double paddingH,
+    int col1Flex,
+    int col2Flex,
+    int col3Flex,
+    double col4Width,
+    ThemeData theme,
+  ) {
+    return Material(
+      color: Colors.white,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 16.0, horizontal: paddingH),
+        child: Row(
+          children: [
+            _buildSortableHeader('Grade', HomeroomSortField.grade, col1Flex),
+            _buildSortableHeader('Name', HomeroomSortField.name, col2Flex),
+            _buildSortableHeader(
+              'Teachers',
+              HomeroomSortField.teachers,
+              col3Flex,
+            ),
+            SizedBox(
+              width: col4Width,
+              child: InkWell(
+                onTap: () => _sort(HomeroomSortField.studentCount),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Students',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight:
+                                _sortField == HomeroomSortField.studentCount
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                            color:
+                                _sortField == HomeroomSortField.studentCount
+                                    ? theme.colorScheme.primary
+                                    : null,
+                          ),
+                          overflow:
+                              TextOverflow
+                                  .ellipsis, // Add this to handle overflow
+                        ),
+                      ),
+                      if (_sortField == HomeroomSortField.studentCount) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          _ascending
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Container _titleBar(ThemeData theme) {
+    return Container(
+      color: theme.colorScheme.primaryContainer,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      child: Row(
+        children: [
+          Text(
+            'Homerooms',
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: theme.colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Spacer(),
+          Row(
+            children: [
+              Icon(
+                Icons.sort,
+                size: 16,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Click on column headers to sort',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
