@@ -58,73 +58,78 @@ class HomePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Dashboard header
-                Row(
-                  children: [
-                    Text(
-                      'Dashboard',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    const Spacer(),
-                    _buildSummaryChip(
-                      context,
-                      'Homerooms',
-                      store.homerooms.length,
-                      Icons.home_work,
-                      theme.colorScheme.tertiaryContainer,
-                      theme.colorScheme.onTertiaryContainer,
-                    ),
-                    const SizedBox(width: 8),
-                    _buildSummaryChip(
-                      context,
-                      'Teachers',
-                      store.allTeachers.length,
-                      Icons.person,
-                      theme.colorScheme.primaryContainer,
-                      theme.colorScheme.onPrimaryContainer,
-                    ),
-                    const SizedBox(width: 8),
-                    _buildSummaryChip(
-                      context,
-                      'Students',
-                      store.allStudents.length,
-                      Icons.school,
-                      theme.colorScheme.secondaryContainer,
-                      theme.colorScheme.onSecondaryContainer,
-                    ),
-                  ],
-                ),
+                _dashboardHeader(theme, context, store),
                 const SizedBox(height: 24),
-
-                // Actions row
                 _actionsRow(context, theme),
                 const SizedBox(height: 24),
-
-                // Homerooms table
-                Expanded(
-                  child: HomeroomsDataTable(
-                    homerooms: store.homerooms,
-                    onTap: (homeroom) {
-                      // Navigate to homeroom details page
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  HomeroomLandingPage(homeroom: homeroom),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                _homeroomsTable(store, context),
               ],
             ),
           );
         },
       ),
+    );
+  }
+
+  Expanded _homeroomsTable(SchoolStore store, BuildContext context) {
+    return Expanded(
+      child: HomeroomsDataTable(
+        homerooms: store.homerooms,
+        onTap: (homeroom) {
+          // Navigate to homeroom details page
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomeroomLandingPage(homeroom: homeroom),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Row _dashboardHeader(
+    ThemeData theme,
+    BuildContext context,
+    SchoolStore store,
+  ) {
+    return Row(
+      children: [
+        Text(
+          'Dashboard',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const Spacer(),
+        _buildSummaryChip(
+          context,
+          'Homerooms',
+          store.homerooms.length,
+          Icons.home_work,
+          theme.colorScheme.tertiaryContainer,
+          theme.colorScheme.onTertiaryContainer,
+        ),
+        const SizedBox(width: 8),
+        _buildSummaryChip(
+          context,
+          'Teachers',
+          store.allTeachers.length,
+          Icons.person,
+          theme.colorScheme.primaryContainer,
+          theme.colorScheme.onPrimaryContainer,
+        ),
+        const SizedBox(width: 8),
+        _buildSummaryChip(
+          context,
+          'Students',
+          store.allStudents.length,
+          Icons.school,
+          theme.colorScheme.secondaryContainer,
+          theme.colorScheme.onSecondaryContainer,
+        ),
+      ],
     );
   }
 
