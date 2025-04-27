@@ -9,7 +9,7 @@ import 'package:project/classes/teacher.dart';
 class ApiClient {
   ApiClient({http.Client? client}) : _client = client ?? http.Client();
 
-  final String _host = 'https://gradebook-api-psi.vercel.app/api';
+  final String _host = 'https://gradebook-api-cyan.vercel.app/api';
   final http.Client _client;
 
   Future<http.Response> fetch(String url) async {
@@ -218,11 +218,9 @@ class ApiClient {
       final List<dynamic> studentsJson = jsonBody['students'] as List<dynamic>;
       final allStudents =
           studentsJson.map((json) => Student.fromJson(json)).toList();
-
       // Convert homerooms JSON to Homeroom objects
       final homerooms =
           homeroomsJson.map((json) => Homeroom.fromJson(json)).toList();
-
       // Return all parsed data in a structured format
       return {
         'homerooms': homerooms,

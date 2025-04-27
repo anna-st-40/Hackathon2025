@@ -33,7 +33,6 @@ class SchoolStore extends ChangeNotifier {
 
     try {
       final data = await _api.getSchoolData();
-
       // Deduplicate homerooms by ID
       final rawHomerooms = data['homerooms'] as List<Homeroom>;
       final uniqueHomerooms = <String, Homeroom>{};
