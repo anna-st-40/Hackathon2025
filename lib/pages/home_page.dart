@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project/components/homeroom_line.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.title});
@@ -19,7 +20,10 @@ class _HomePageState extends State<HomePage> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [Text("Homeroom 1"), Text("Homeroom 2")],
+          children: [
+            HomeroomLine(name: "Homeroom 1", grade: "9th Grade", teachers: ["Jane Doe"], students: 23),
+            HomeroomLine(name: "Homeroom 2", grade: "10th Grade", teachers: ["John Smith"], students: 25),
+          ],
         ),
       ),
     );
