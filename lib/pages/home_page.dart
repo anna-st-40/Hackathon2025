@@ -98,6 +98,10 @@ class HomePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
+                // Actions row
+                _actionsRow(context, theme),
+                const SizedBox(height: 24),
+
                 // Homerooms table
                 Expanded(
                   child: HomeroomsDataTable(
@@ -119,18 +123,45 @@ class HomePage extends StatelessWidget {
             ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Add new homeroom action
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Add homeroom functionality coming soon'),
-            ),
-          );
-        },
-        tooltip: 'Add Homeroom',
-        child: const Icon(Icons.add),
+      )
+    );
+  }
+
+  Row _actionsRow(BuildContext context, ThemeData theme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        _actionButton(
+          () {}, // Add your action here
+          const Icon(Icons.add),
+          'Add New Homeroom',
+          theme,
+        ),
+        const SizedBox(width: 16),
+        _actionButton(
+          null, // Disabled by default
+          const Icon(Icons.delete),
+          'Delete Selected Homerooms',
+          theme,
+        ),
+      ],
+    );
+  }
+
+  ElevatedButton _actionButton(
+    VoidCallback? onPressed,
+    Icon icon,
+    String label,
+    ThemeData theme,
+  ) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: icon,
+      label: Text(label),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: theme.colorScheme.primaryContainer,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
       ),
     );
   }
