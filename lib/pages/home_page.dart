@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:project/components/add_homeroom_dialog.dart';
+import 'package:project/components/delete_homeroom_dialog.dart';
 import 'package:project/pages/homeroom.dart';
 import 'package:project/pages/student_list.dart';
 import 'package:project/pages/teachers_list.dart';
 import 'package:provider/provider.dart';
 import 'package:project/classes/school_store.dart';
-import 'package:project/components/homerooms_table.dart'; // Add this import
+import 'package:project/components/homerooms_table.dart';
+import 'package:project/classes/homeroom.dart'; // Add this import
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  // Changed to StatefulWidget
   final String title;
 
   const HomePage({super.key, required this.title});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<Homeroom> _selectedHomerooms = []; // Track selected homerooms
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +28,7 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: Text(widget.title), // Use widget.title
         backgroundColor: theme.colorScheme.inversePrimary,
       ),
       drawer: _buildDrawer(context),
@@ -60,7 +70,7 @@ class HomePage extends StatelessWidget {
               children: [
                 _dashboardHeader(theme, context, store),
                 const SizedBox(height: 24),
-                _actionsRow(context, theme),
+                _actionsRow(context, theme, store),
                 const SizedBox(height: 24),
                 _homeroomsTable(store, context),
               ],
@@ -76,13 +86,17 @@ class HomePage extends StatelessWidget {
       child: HomeroomsDataTable(
         homerooms: store.homerooms,
         onTap: (homeroom) {
-          // Navigate to homeroom details page
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => HomeroomLandingPage(homeroom: homeroom),
             ),
           );
+        },
+        onSelectionChanged: (selectedHomerooms) {
+          setState(() {
+            _selectedHomerooms = selectedHomerooms;
+          });
         },
       ),
     );
@@ -133,7 +147,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Row _actionsRow(BuildContext context, ThemeData theme) {
+  Row _actionsRow(BuildContext context, ThemeData theme, SchoolStore store) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
@@ -143,17 +157,27 @@ class HomePage extends StatelessWidget {
               context: context,
               builder: (context) => const AddHomeroomDialog(),
             );
-          }, // Add your action here
+          },
           const Icon(Icons.add),
           'Add New Homeroom',
           theme,
         ),
         const SizedBox(width: 16),
         _actionButton(
-          null, // Disabled by default
+          // Enable only if homerooms are selected
+          _selectedHomerooms.isEmpty
+              ? null
+              : () => _deleteSelectedHomerooms(context, store),
           const Icon(Icons.delete),
-          'Delete Selected Homerooms',
+          _selectedHomerooms.isEmpty
+              ? 'Delete Selected Homerooms'
+              : 'Delete ${_selectedHomerooms.length} Homeroom(s)',
           theme,
+          // Add red color for delete button when enabled
+          _selectedHomerooms.isEmpty ? null : theme.colorScheme.errorContainer,
+          _selectedHomerooms.isEmpty
+              ? null
+              : theme.colorScheme.onErrorContainer,
         ),
       ],
     );
@@ -163,18 +187,70 @@ class HomePage extends StatelessWidget {
     VoidCallback? onPressed,
     Icon icon,
     String label,
-    ThemeData theme,
-  ) {
+    ThemeData theme, [
+    Color? backgroundColor,
+    Color? foregroundColor,
+  ]) {
     return ElevatedButton.icon(
       onPressed: onPressed,
-      icon: icon,
-      label: Text(label),
+      icon: IconTheme(
+        data: IconThemeData(
+          color: foregroundColor ?? theme.colorScheme.onPrimaryContainer,
+        ),
+        child: icon,
+      ),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: foregroundColor ?? theme.colorScheme.onPrimaryContainer,
+        ),
+      ),
       style: ElevatedButton.styleFrom(
-        backgroundColor: theme.colorScheme.primaryContainer,
+        backgroundColor: backgroundColor ?? theme.colorScheme.primaryContainer,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
       ),
     );
+  }
+
+  Future<void> _deleteSelectedHomerooms(
+    BuildContext context,
+    SchoolStore store,
+  ) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => DeleteHomeroomDialog(homerooms: _selectedHomerooms),
+    );
+
+    // If deletion was successful
+    if (result == true && context.mounted) {
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Successfully deleted ${_selectedHomerooms.length} homeroom(s)',
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      // Clear selection
+      setState(() {
+        _selectedHomerooms = [];
+      });
+    } else if (result == false && context.mounted) {
+      // User canceled deletion, no need for notification
+    } else if (context.mounted) {
+      // Deletion failed
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete some or all homerooms'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Widget _buildSummaryChip(

@@ -299,6 +299,48 @@ class SchoolStore extends ChangeNotifier {
     _allStudents = studentList;
   }
 
+  /// Deletes multiple homerooms by their IDs
+  /// Deletes multiple homerooms by their IDs
+  Future<bool> deleteHomerooms(List<String> homeroomIds) async {
+    if (homeroomIds.isEmpty) return true;
+
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      // Track successful deletions
+      int successCount = 0;
+
+      // Delete homerooms one by one
+      for (final id in homeroomIds) {
+        try {
+          final success = await _api.deleteHomeroom(id);
+          if (success) {
+            successCount++;
+          }
+        } catch (e) {
+          print('Error deleting homeroom $id: $e');
+          // Continue with next homeroom
+        }
+      }
+
+      // Reload homerooms data after deletion
+      await loadHomerooms();
+
+      isLoading = false;
+      notifyListeners();
+
+      // Return true if all deletions were successful
+      return successCount == homeroomIds.length;
+    } catch (e) {
+      error = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<Student> createStudent(String name) async {
     isLoading = true;
     error = null;

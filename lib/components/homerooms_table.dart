@@ -9,11 +9,13 @@ enum HomeroomSortField { grade, name, teachers, studentCount }
 class HomeroomsDataTable extends StatefulWidget {
   final List<Homeroom> homerooms;
   final HomeroomTapCallback onTap;
+  final ValueChanged<List<Homeroom>>? onSelectionChanged; // Add this parameter
 
   const HomeroomsDataTable({
     super.key,
     required this.homerooms,
     required this.onTap,
+    this.onSelectionChanged, // Add this parameter
   });
 
   @override
@@ -197,6 +199,8 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
                           } else {
                             selectedHomerooms.remove(hr);
                           }
+                          // Notify parent about selection change
+                          widget.onSelectionChanged?.call(selectedHomerooms);
                         });
                       },
                     ),
@@ -295,6 +299,8 @@ class _HomeroomsDataTableState extends State<HomeroomsDataTable> {
                   } else if (value == false || value == null) {
                     selectedHomerooms.clear();
                   }
+                  // Notify parent about selection change
+                  widget.onSelectionChanged?.call(selectedHomerooms);
                 });
               },
             ),

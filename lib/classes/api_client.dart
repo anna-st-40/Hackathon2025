@@ -155,6 +155,21 @@ class ApiClient {
     }
   }
 
+  /// Deletes a homeroom by ID
+  Future<bool> deleteHomeroom(String homeroomId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$_host/homerooms/$homeroomId'),
+        headers: {'Accept': 'application/json'},
+      );
+
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      print('Error deleting homeroom: $e');
+      return false;
+    }
+  }
+
   // Add a new method to reload a single homeroom by ID
   Future<Homeroom> getHomeroomById(String homeroomId) async {
     try {
